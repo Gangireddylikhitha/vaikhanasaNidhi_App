@@ -13,7 +13,10 @@ import SearchPage from './pages/SearchPage';
 import Bookmarks from './pages/Bookmarks';
 import Panchangam from './pages/Panchangam';
 import Profile from './pages/Profile';
+import LoginPage from './pages/LoginPage';
+import AdminPanel from './pages/AdminPanel';
 import { hasSeenOnboarding, getSettings } from './store/useAppStore';
+import { getAuth, isAdmin, logout } from './store/authStore';
 
 const queryClient = new QueryClient();
 
@@ -35,10 +38,9 @@ function PageWrapper({ children }) {
 }
 
 export default function App() {
-  const [phase, setPhase] = useState('splash'); // 'splash' | 'onboarding' | 'app'
+  const [phase, setPhase] = useState('splash'); // 'splash' | 'onboarding' | 'login' | 'app' | 'admin'
 
   useEffect(() => {
-    // Apply saved settings
     const settings = getSettings();
     if (settings.darkMode) document.documentElement.classList.add('dark');
     const fontMap = { small: '14px', medium: '16px', large: '19px' };
@@ -46,17 +48,34 @@ export default function App() {
   }, []);
 
   function afterSplash() {
-    if (hasSeenOnboarding()) setPhase('app');
-    else setPhase('onboarding');
+    const auth = getAuth();
+    if (auth.loggedIn) {
+      setPhase(auth.role === 'admin' ? 'admin' : 'app');
+    } else if (hasSeenOnboarding()) {
+      setPhase('login');
+    } else {
+      setPhase('onboarding');
+    }
+  }
+
+  function handleLogin(role) {
+    setPhase(role === 'admin' ? 'admin' : 'app');
+  }
+
+  function handleLogout() {
+    logout();
+    setPhase('login');
   }
 
   if (phase === 'splash') return <Splash onDone={afterSplash} />;
-  if (phase === 'onboarding') return <Onboarding onDone={() => setPhase('app')} />;
+  if (phase === 'onboarding') return <Onboarding onDone={() => setPhase('login')} />;
+  if (phase === 'login') return <LoginPage onLogin={handleLogin} />;
+  if (phase === 'admin') return <AdminPanel onLogout={handleLogout} />;
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes />
+        <AppRoutes onLogout={handleLogout} />
         <Toaster
           position="bottom-center"
           toastOptions={{
@@ -68,9 +87,9 @@ export default function App() {
   );
 }
 
-function AppRoutes() {
+function AppRoutes({ onLogout }) {
   return (
-    <Layout>
+    <Layout onLogout={onLogout}>
       <PageWrapper>
         <Routes>
           <Route path="/" element={<Home />} />

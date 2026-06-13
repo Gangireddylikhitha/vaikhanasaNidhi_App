@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, ChevronRight } from 'lucide-react';
+import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, ChevronRight, LogOut } from 'lucide-react';
 import SettingsDrawer from './SettingsDrawer';
 import logo from '../assets/images/logo.png';
 
@@ -17,7 +17,7 @@ const GOLD = 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)';
 const GOLD_DARK = '#8B6200';
 const GOLD_MID = '#C88F2D';
 
-export default function Layout({ children }) {
+export default function Layout({ children, onLogout }) {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -60,13 +60,21 @@ export default function Layout({ children }) {
             </Link>
           ))}
         </nav>
-        <div className="px-4 pb-6">
+        <div className="px-4 pb-6 space-y-1">
           <button onClick={() => setSettingsOpen(true)}
             className="flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-telugu text-sm hover:bg-white/20"
             style={{ color: GOLD_DARK + 'bb', fontFamily: 'Tiro Telugu, serif' }}>
             <Settings size={18} />
             సెట్టింగ్స్
           </button>
+          {onLogout && (
+            <button onClick={onLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-telugu text-sm hover:bg-white/20"
+              style={{ color: GOLD_DARK + 'bb', fontFamily: 'Tiro Telugu, serif' }}>
+              <LogOut size={18} />
+              లాగ్అవుట్
+            </button>
+          )}
           <div className="mt-3 text-center text-xs" style={{ color: GOLD_DARK + '88' }}>వైఖానస నిధి v3.0</div>
         </div>
       </aside>
@@ -130,6 +138,13 @@ export default function Layout({ children }) {
                   style={{ color: GOLD_DARK + 'bb', fontFamily: 'Tiro Telugu, serif' }}>
                   <Settings size={18} /> సెట్టింగ్స్
                 </button>
+                {onLogout && (
+                  <button onClick={() => { setDrawerOpen(false); onLogout(); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl w-full font-telugu text-sm hover:bg-white/20"
+                    style={{ color: GOLD_DARK + 'bb', fontFamily: 'Tiro Telugu, serif' }}>
+                    <LogOut size={18} /> లాగ్అవుట్
+                  </button>
+                )}
               </div>
             </motion.aside>
           </>
