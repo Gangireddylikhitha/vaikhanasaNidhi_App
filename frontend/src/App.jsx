@@ -42,7 +42,6 @@ export default function App() {
 
   useEffect(() => {
     const settings = getSettings();
-    if (settings.darkMode) document.documentElement.classList.add('dark');
     const fontMap = { small: '14px', medium: '16px', large: '19px' };
     document.documentElement.style.fontSize = fontMap[settings.fontSize] || '16px';
   }, []);
@@ -79,7 +78,7 @@ export default function App() {
         <Toaster
           position="bottom-center"
           toastOptions={{
-            style: { fontFamily: 'Tiro Telugu, serif', background: 'hsl(0 57% 27%)', color: 'white', border: 'none' },
+            style: { fontFamily: 'Tiro Telugu, serif', background: '#141414', color: '#E4B24B', border: '1px solid #C88F2D33' },
           }}
         />
       </BrowserRouter>

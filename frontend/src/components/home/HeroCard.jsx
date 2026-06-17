@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, BookOpen, Sparkles, X, ChevronRight } from "lucide-react";
+import { Share2, BookOpen, Sparkles, X } from "lucide-react";
 import { DAILY_SLOKAS } from "../../data/scriptures";
 import heroImg from "../../assets/images/heroImg.png";
 
-const GOLD_DARK = "#8B6200";
-const GOLD = "linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)";
+const GOLD = "#E4B24B";
+const GOLD_MID = "#C88F2D";
 
 export default function HeroCard() {
   const sloka = DAILY_SLOKAS[0];
@@ -19,143 +19,145 @@ export default function HeroCard() {
 
   return (
     <>
-      {/* ── Hero Card ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-        className="lotus-bg rounded-3xl overflow-hidden shadow-xl mx-4 sm:mx-6 mt-4 sm:mt-6 cursor-pointer"
-        style={{ background: GOLD }}
-        onClick={() => setOpen(true)}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden mx-4 sm:mx-6 mt-4 sm:mt-8"
       >
-        {/* top label row */}
-        <div className="flex items-center gap-2 px-5 pt-5 sm:px-7 sm:pt-7">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white/30">
-            <Sparkles size={12} color={GOLD_DARK} />
-          </div>
-          <span className="text-xs font-medium tracking-wide uppercase" style={{ color: GOLD_DARK }}>నేటి దివ్య శ్లోకం</span>
-          <div className="ml-auto flex items-center gap-1 text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
-            <span className="hidden sm:inline">{new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long" })}</span>
-            <ChevronRight size={14} />
-          </div>
-        </div>
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 min-h-[340px] md:min-h-[400px]">
 
-        {/* hero body — relative container */}
-        <div className="relative min-h-[280px]">
-
-          {/* hero image — absolute right, oversized */}
-          <img src={heroImg} alt="deity"
-            className="absolute bottom-0 right-0 object-contain object-bottom drop-shadow-xl pointer-events-none select-none"
-            style={{ height: 320, width: "55%" }} />
-
-          {/* sloka content — overlays image via z-10 */}
-          <div className="relative z-10 flex flex-col justify-center px-4 sm:px-6 py-4 sm:py-5" style={{ width: "70%" }}>
-            <p className="font-telugu leading-relaxed font-semibold mb-3"
-              style={{ fontFamily: "Tiro Telugu, serif", color: "#fff", fontSize: 15 }}>
-              {sloka.telugu}
-            </p>
-
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex-1 h-px bg-white/40" />
-              <span className="text-xs flex-shrink-0" style={{ color: GOLD_DARK }}>అర్థం</span>
-              <div className="flex-1 h-px bg-white/40" />
+          {/* Left — content */}
+          <div className="flex-1 z-10 w-full md:w-1/2">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles size={14} style={{ color: GOLD_MID }} />
+              <span
+                className="text-xs font-semibold tracking-[0.2em] uppercase"
+                style={{ color: GOLD_MID, textShadow: '0 0 8px rgba(200,143,45,0.4)' }}
+              >
+                Divine Inspiration
+              </span>
             </div>
 
-            <p className="font-telugu text-xs leading-relaxed line-clamp-3 mb-1"
-              style={{ fontFamily: "Tiro Telugu, serif", color: "rgba(255,255,255,0.85)" }}>
+            <h1
+              className="font-telugu font-bold leading-relaxed mb-4 gold-glow-strong cursor-pointer"
+              style={{ fontFamily: "Tiro Telugu, serif", fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}
+              onClick={() => setOpen(true)}
+            >
+              {sloka.telugu}
+            </h1>
+
+            <p
+              className="text-sm leading-relaxed mb-6 max-w-lg"
+              style={{ color: '#C88F2D99', fontFamily: "Tiro Telugu, serif" }}
+            >
               {sloka.meaning}
             </p>
-            <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>— {sloka.source}</p>
 
-            <p className="text-xs mt-3 font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>
-              పూర్తిగా చదవడానికి నొక్కండి →
-            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/search"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded text-sm font-semibold transition-all hover:brightness-110 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)', color: '#0a0a0a' }}
+              >
+                <BookOpen size={15} />
+                Explore Scriptures
+              </Link>
+              <button
+                onClick={() => setOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded text-sm font-semibold transition-all hover:bg-white/5 active:scale-95"
+                style={{ border: '1px solid #C88F2D66', color: GOLD }}
+              >
+                Learn More
+              </button>
+            </div>
           </div>
 
+          {/* Right — deity image */}
+          <div className="relative flex-shrink-0 w-full md:w-1/2 flex justify-center md:justify-end">
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(circle at 60% 50%, rgba(200,143,45,0.12) 0%, transparent 65%)' }}
+            />
+            <motion.img
+              src={heroImg}
+              alt="deity"
+              className="relative object-contain drop-shadow-2xl pointer-events-none select-none"
+              style={{ height: 'clamp(240px, 45vw, 380px)', filter: 'drop-shadow(0 0 30px rgba(200,143,45,0.25))' }}
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </div>
         </div>
-      </motion.div>
+      </motion.section>
 
-      {/* ── Full Sloka Overlay ── */}
+      {/* Full Sloka Overlay */}
       <AnimatePresence>
         {open && (
           <>
-            {/* backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
               onClick={() => setOpen(false)}
             />
-
-            {/* panel */}
             <motion.div
               initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed inset-x-4 bottom-4 top-16 z-50 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
-              style={{ background: GOLD }}
+              className="fixed inset-x-4 bottom-4 top-16 z-50 rounded-2xl overflow-hidden shadow-2xl flex flex-col corner-card"
+              style={{ background: '#141414', border: '1px solid #C88F2D22' }}
             >
-              {/* panel header */}
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/20">
+              <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: '1px solid #C88F2D22' }}>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center">
-                    <Sparkles size={14} color={GOLD_DARK} />
-                  </div>
+                  <Sparkles size={14} style={{ color: GOLD_MID }} />
                   <div>
-                    <p className="font-bold text-sm" style={{ color: GOLD_DARK, fontFamily: "Tiro Telugu, serif" }}>
+                    <p className="font-bold text-sm gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
                       నేటి దివ్య శ్లోకం
                     </p>
-                    <p className="text-xs" style={{ color: GOLD_DARK + "88" }}>{sloka.source}</p>
+                    <p className="text-xs" style={{ color: '#C88F2D66' }}>{sloka.source}</p>
                   </div>
                 </div>
-                <button onClick={() => setOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center"
-                  style={{ color: GOLD_DARK }}>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/5"
+                  style={{ color: GOLD, border: '1px solid #C88F2D44' }}
+                >
                   <X size={16} />
                 </button>
               </div>
 
-              {/* scrollable content */}
               <div className="flex-1 overflow-y-auto">
                 <div className="flex flex-col md:flex-row">
-
-                  {/* image */}
                   <div className="flex justify-center md:w-56 md:flex-shrink-0 md:self-end">
-                    <img src={heroImg} alt="deity"
-                      className="object-contain object-bottom drop-shadow-xl"
-                      style={{ height: 220, maxWidth: 180 }} />
+                    <img src={heroImg} alt="deity" className="object-contain object-bottom" style={{ height: 220, maxWidth: 180, filter: 'drop-shadow(0 0 20px rgba(200,143,45,0.3))' }} />
                   </div>
-
-                  {/* sloka full text */}
                   <div className="flex-1 px-5 py-5 md:py-6">
-
-                    {/* telugu sloka */}
-                    <div className="bg-white/25 rounded-2xl p-4 mb-4">
-                      <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: GOLD_DARK + "99" }}>శ్లోకం</p>
-                      <p className="font-telugu leading-loose font-semibold"
-                        style={{ fontFamily: "Tiro Telugu, serif", color: GOLD_DARK, fontSize: 16 }}>
+                    <div className="rounded-xl p-4 mb-4" style={{ background: '#1a1a1a', border: '1px solid #C88F2D22' }}>
+                      <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: '#C88F2D66' }}>శ్లోకం</p>
+                      <p className="font-telugu leading-loose font-semibold gold-glow" style={{ fontFamily: "Tiro Telugu, serif", fontSize: 16 }}>
                         {sloka.telugu}
                       </p>
                     </div>
-
-                    {/* meaning */}
-                    <div className="bg-white/20 rounded-2xl p-4 mb-4">
-                      <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: GOLD_DARK + "99" }}>అర్థం</p>
-                      <p className="font-telugu leading-relaxed"
-                        style={{ fontFamily: "Tiro Telugu, serif", color: GOLD_DARK + "ee", fontSize: 14 }}>
+                    <div className="rounded-xl p-4 mb-4" style={{ background: '#1a1a1a', border: '1px solid #C88F2D22' }}>
+                      <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: '#C88F2D66' }}>అర్థం</p>
+                      <p className="font-telugu leading-relaxed" style={{ fontFamily: "Tiro Telugu, serif", color: '#C88F2Dcc', fontSize: 14 }}>
                         {sloka.meaning}
                       </p>
                     </div>
-
-                    {/* source */}
-                    <p className="text-xs text-center mb-5" style={{ color: GOLD_DARK + "77" }}>— {sloka.source}</p>
-
-                    {/* action buttons */}
+                    <p className="text-xs text-center mb-5" style={{ color: '#C88F2D55' }}>— {sloka.source}</p>
                     <div className="flex gap-3">
-                      <button onClick={handleShare}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium bg-white/30 hover:bg-white/45 active:scale-95 transition-all"
-                        style={{ color: GOLD_DARK }}>
+                      <button
+                        onClick={handleShare}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium hover:bg-white/5 active:scale-95 transition-all"
+                        style={{ border: '1px solid #C88F2D44', color: GOLD }}
+                      >
                         <Share2 size={15} /> Share
                       </button>
-                      <Link to="/search" onClick={() => setOpen(false)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold bg-white/50 hover:bg-white/65 active:scale-95 transition-all"
-                        style={{ color: GOLD_DARK }}>
+                      <Link
+                        to="/search"
+                        onClick={() => setOpen(false)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold active:scale-95 transition-all"
+                        style={{ background: 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 100%)', color: '#0a0a0a' }}
+                      >
                         <BookOpen size={15} /> Read More
                       </Link>
                     </div>
