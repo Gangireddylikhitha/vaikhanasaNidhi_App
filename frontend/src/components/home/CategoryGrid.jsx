@@ -22,65 +22,22 @@ export const CATEGORIES = [
   { key: "book",           label: "గ్రంధalu",         en: "Books",          icon: Library,        count: "20 Books",     img: imgBooks        },
 ];
 
-const FEATURED = CATEGORIES.slice(0, 3);
-
 function CategoryGrid() {
   return (
-    <section className="px-4 sm:px-6 mt-10">
-      <div className="flex items-end justify-between mb-5">
+    <section className="mt-10">
+      <div className="flex items-end justify-between mb-4 px-4 sm:px-6 lg:px-8">
         <div>
-          <h2 className="font-telugu font-bold text-lg sm:text-xl gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
-            Sacred Pathways
+          <h2 className="font-telugu font-bold text-scale-xl gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
+            All Categories
           </h2>
-          <p className="text-xs mt-1" style={{ color: '#C88F2D66' }}>Sacred pathways to eternal knowledge</p>
+          <p className="text-scale-sm mt-1 text-muted">Sacred pathways to eternal knowledge</p>
         </div>
-        <Link to="/search" className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase" style={{ color: '#C88F2D' }}>
+        <Link to="/categories" className="flex items-center gap-1 text-scale-sm font-semibold tracking-wider uppercase text-primary-gold">
           View All <ChevronRight size={12} />
         </Link>
       </div>
 
-      {/* Featured 3 cards — reference design */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {FEATURED.map((cat, i) => {
-          const Icon = cat.icon;
-          const href = cat.link || "/search?cat=" + cat.key;
-          return (
-            <motion.a
-              key={cat.key}
-              href={href}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -4 }}
-              className="corner-card block p-6 group cursor-pointer"
-            >
-              <div className="flex flex-col items-center text-center gap-4 py-2">
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center"
-                  style={{ border: '1px solid #C88F2D44', background: '#1a1a1a' }}
-                >
-                  <Icon size={24} style={{ color: '#E4B24B', filter: 'drop-shadow(0 0 6px rgba(228,178,75,0.5))' }} />
-                </div>
-                <div>
-                  <p className="font-telugu font-bold text-base gold-glow mb-1" style={{ fontFamily: "Tiro Telugu, serif" }}>
-                    {cat.en}
-                  </p>
-                  <p className="text-xs" style={{ color: '#C88F2D77' }}>{cat.label}</p>
-                </div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#C88F2D55' }}>
-                  {cat.count}
-                </p>
-              </div>
-            </motion.a>
-          );
-        })}
-      </div>
-
-      {/* All categories grid */}
-      <h3 className="font-telugu font-bold text-sm mb-3" style={{ color: '#C88F2D99', fontFamily: "Tiro Telugu, serif" }}>
-        All Categories
-      </h3>
-      <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 gap-2 sm:gap-3">
+      <div className="scroll-row scrollbar-gold px-4 sm:px-6 lg:px-8">
         {CATEGORIES.map((cat, i) => {
           const Icon = cat.icon;
           const href = cat.link || "/search?cat=" + cat.key;
@@ -91,22 +48,27 @@ function CategoryGrid() {
               initial={{ opacity: 0, scale: 0.88 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.04 }}
-              whileHover={{ scale: 1.07, y: -3 }}
               whileTap={{ scale: 0.93 }}
-              className="relative rounded-xl overflow-hidden cursor-pointer select-none"
-              style={{ aspectRatio: "1 / 1.2", border: '1px solid #C88F2D22' }}
+              className="category-tile relative flex-shrink-0 rounded-xl overflow-hidden cursor-pointer select-none w-[100px] sm:w-[110px] lg:w-[120px]"
+              style={{ aspectRatio: "1 / 1.2", border: "1px solid var(--border-subtle)", background: "var(--bg-card)" }}
             >
               <img src={cat.img} alt={cat.label} className="absolute inset-0 w-full h-full object-cover opacity-60" loading="lazy" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.4) 60%, transparent 100%)" }} />
-              <div className="relative z-10 w-full h-full flex flex-col items-center justify-between p-2 sm:p-2.5">
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, var(--bg-page) 0%, color-mix(in srgb, var(--bg-page) 40%, transparent) 60%, transparent 100%)" }} />
+              <div className="relative z-10 w-full h-full flex flex-col items-center justify-between p-2">
                 <div className="self-end">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center" style={{ background: '#C88F2D22', border: '1px solid #C88F2D33' }}>
-                    <Icon size={13} color="#E4B24B" />
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center bg-elevated" style={{ border: "1px solid var(--border-subtle)" }}>
+                    <Icon size={13} className="text-primary-gold" />
                   </div>
                 </div>
-                <span className="w-full text-center font-semibold leading-tight" style={{ fontFamily: "Tiro Telugu, serif", fontSize: "10px", color: '#E4B24B' }}>
+                <span className="w-full text-center font-semibold leading-tight text-primary-gold text-scale-xs font-telugu" style={{ fontFamily: "Tiro Telugu, serif" }}>
                   {cat.en}
                 </span>
+              </div>
+
+              <div className="category-popup">
+                <p className="font-telugu font-bold text-scale-sm gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>{cat.en}</p>
+                <p className="font-telugu text-scale-xs text-muted mt-0.5" style={{ fontFamily: "Tiro Telugu, serif" }}>{cat.label}</p>
+                <p className="text-scale-xs text-muted-light mt-1 uppercase tracking-wider">{cat.count}</p>
               </div>
             </motion.a>
           );

@@ -77,14 +77,14 @@ export function getProgress(scripture_id) {
 
 // Settings
 export function getSettings() {
-  return loadStorage().settings || {
-    fontSize: 'medium',
+  return {
+    themeMode: 'dark',
+    fontSize: 'large',
+    textColor: 'bright',
     notifyDailySloka: true,
     notifyPanchangam: false,
+    ...loadStorage().settings,
   };
-  const { language, ...cleanSettings } = settings;
-  saveStorage({ settings: cleanSettings });
-  return cleanSettings;
 }
 
 export function saveSettings(settings) {

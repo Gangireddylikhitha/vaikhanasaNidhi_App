@@ -3,7 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, Bell, LogOut } from 'lucide-react';
 import SettingsDrawer from './SettingsDrawer';
-import logo from '../assets/images/logo.png';
+
+
+const LOGO = '/vaikhanasa.png';
 
 const NAV_LINKS = [
   { to: '/', icon: Home, label: 'హోం', en: 'Sacred' },
@@ -15,8 +17,6 @@ const NAV_LINKS = [
 
 const GOLD = '#E4B24B';
 const GOLD_MID = '#C88F2D';
-const BG_DARK = '#0a0a0a';
-const BG_NAV = 'rgba(10, 10, 10, 0.92)';
 
 export default function Layout({ children, onLogout }) {
   const location = useLocation();
@@ -33,19 +33,19 @@ export default function Layout({ children, onLogout }) {
   const isActive = (to) => location.pathname === to;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: BG_DARK }}>
+    <div className="min-h-screen flex flex-col page-bg">
 
       {/* Top Navigation — desktop & tablet */}
       <header
         className={`hidden lg:flex fixed top-0 left-0 right-0 z-30 items-center justify-between px-8 h-16 transition-all duration-300 backdrop-blur-md ${scrolled ? 'border-b' : ''}`}
-        style={{ background: BG_NAV, borderColor: scrolled ? '#C88F2D22' : 'transparent' }}
+        style={{ background: 'var(--bg-nav)', borderColor: scrolled ? 'var(--border-subtle)' : 'transparent' }}
       >
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid #C88F2D44' }}>
-            <img src={logo} alt="logo" className="w-7 h-7 object-contain" />
+          <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid var(--border-medium)', boxShadow: '0 0 12px rgba(200,143,45,0.2)' }}>
+            <img src={LOGO} alt="Vaikhanasa Nidhi" className="w-10 h-10 object-contain" />
           </div>
-          <span className="font-telugu font-bold text-lg gold-glow" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+          <span className="font-telugu font-bold text-lg gold-glow text-primary-gold" style={{ fontFamily: 'Tiro Telugu, serif' }}>
             వైఖానస నిధి
           </span>
         </Link>
@@ -58,10 +58,9 @@ export default function Layout({ children, onLogout }) {
               to={to}
               className="px-4 py-2 rounded-lg text-sm transition-all duration-200 font-telugu"
               style={{
-                color: isActive(to) ? GOLD : '#C88F2D99',
+                color: isActive(to) ? 'var(--text-primary)' : 'var(--text-muted)',
                 fontFamily: 'Tiro Telugu, serif',
-                background: isActive(to) ? '#C88F2D15' : 'transparent',
-                textShadow: isActive(to) ? '0 0 12px rgba(228,178,75,0.4)' : 'none',
+                background: isActive(to) ? 'var(--hover-bg)' : 'transparent',
               }}
             >
               {label}
@@ -94,14 +93,14 @@ export default function Layout({ children, onLogout }) {
       {/* Mobile Header */}
       <header
         className={`lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 h-14 transition-all duration-300 backdrop-blur-md ${scrolled ? 'border-b' : ''}`}
-        style={{ background: BG_NAV, borderColor: scrolled ? '#C88F2D22' : 'transparent' }}
+        style={{ background: 'var(--bg-nav)', borderColor: scrolled ? 'var(--border-subtle)' : 'transparent' }}
       >
-        <button onClick={() => setDrawerOpen(true)} className="p-2" style={{ color: GOLD }}>
+        <button onClick={() => setDrawerOpen(true)} className="p-2 text-primary-gold">
           <Menu size={22} />
         </button>
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="logo" className="w-9 h-9 object-contain" />
-          <span className="font-telugu font-bold text-base gold-glow" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+          <img src={LOGO} alt="Vaikhanasa Nidhi" className="w-10 h-10 object-contain" style={{ filter: 'drop-shadow(0 0 8px rgba(200,143,45,0.35))' }} />
+          <span className="font-telugu font-bold text-base gold-glow text-primary-gold" style={{ fontFamily: 'Tiro Telugu, serif' }}>
             వైఖానస నిధి
           </span>
         </Link>
@@ -116,18 +115,18 @@ export default function Layout({ children, onLogout }) {
           <>
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 z-40 lg:hidden" onClick={() => setDrawerOpen(false)}
+              className="fixed inset-0 z-40 lg:hidden" style={{ background: 'var(--bg-overlay)' }} onClick={() => setDrawerOpen(false)}
             />
             <motion.aside
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed left-0 top-0 h-full w-72 z-50 shadow-2xl flex flex-col lg:hidden"
-              style={{ background: '#111111', borderRight: '1px solid #C88F2D22' }}
+              className="settings-drawer fixed left-0 top-0 h-full w-72 z-50 shadow-2xl flex flex-col lg:hidden"
+              style={{ borderRight: '1px solid var(--border-subtle)' }}
             >
-              <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid #C88F2D22' }}>
+              <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid #C88F2D44' }}>
-                    <img src={logo} alt="logo" className="w-7 h-7 object-contain" />
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid var(--border-medium)', boxShadow: '0 0 12px rgba(200,143,45,0.2)' }}>
+                    <img src={LOGO} alt="Vaikhanasa Nidhi" className="w-9 h-9 object-contain" />
                   </div>
                   <div>
                     <div className="font-telugu font-bold gold-glow" style={{ fontFamily: 'Tiro Telugu, serif' }}>వైఖానస నిధి</div>
@@ -187,7 +186,7 @@ export default function Layout({ children, onLogout }) {
       {/* Mobile Bottom Tab Bar */}
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 z-20 flex items-center backdrop-blur-md"
-        style={{ background: BG_NAV, borderTop: '1px solid #C88F2D22' }}
+        style={{ background: 'var(--bg-nav)', borderTop: '1px solid var(--border-subtle)' }}
       >
         {NAV_LINKS.map(({ to, icon: Icon, label }) => {
           const active = isActive(to);
@@ -200,10 +199,10 @@ export default function Layout({ children, onLogout }) {
                   style={{ background: GOLD, boxShadow: '0 0 8px rgba(228,178,75,0.6)' }}
                 />
               )}
-              <Icon size={20} strokeWidth={active ? 2.5 : 1.8} color={active ? GOLD_MID : '#555'} />
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.8} color={active ? GOLD_MID : 'var(--text-muted)'} />
               <span
                 className="font-telugu text-[10px]"
-                style={{ fontFamily: 'Tiro Telugu, serif', color: active ? GOLD : '#555' }}
+                style={{ fontFamily: 'Tiro Telugu, serif', color: active ? GOLD : 'var(--text-muted)' }}
               >
                 {label}
               </span>

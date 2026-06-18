@@ -13,10 +13,14 @@ import SearchPage from './pages/SearchPage';
 import Bookmarks from './pages/Bookmarks';
 import Panchangam from './pages/Panchangam';
 import Profile from './pages/Profile';
+import CategoriesPage from './pages/CategoriesPage';
+import PopularPage from './pages/PopularPage';
+import ContinueReadingPage from './pages/ContinueReadingPage';
 import LoginPage from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
 import { hasSeenOnboarding, getSettings } from './store/useAppStore';
 import { getAuth, isAdmin, logout } from './store/authStore';
+import { applyTheme } from './lib/theme';
 
 const queryClient = new QueryClient();
 
@@ -41,9 +45,7 @@ export default function App() {
   const [phase, setPhase] = useState('splash'); // 'splash' | 'onboarding' | 'login' | 'app' | 'admin'
 
   useEffect(() => {
-    const settings = getSettings();
-    const fontMap = { small: '14px', medium: '16px', large: '19px' };
-    document.documentElement.style.fontSize = fontMap[settings.fontSize] || '16px';
+    applyTheme(getSettings());
   }, []);
 
   function afterSplash() {
@@ -78,7 +80,14 @@ export default function App() {
         <Toaster
           position="bottom-center"
           toastOptions={{
-            style: { fontFamily: 'Tiro Telugu, serif', background: '#141414', color: '#E4B24B', border: '1px solid #C88F2D33' },
+            style: {
+              fontFamily: 'Tiro Telugu, serif',
+              background: 'var(--bg-card)',
+              color: 'var(--text-body)',
+              border: '1px solid #C88F2D33',
+              fontSize: '14px',
+              lineHeight: '1.5',
+            },
           }}
         />
       </BrowserRouter>
@@ -97,6 +106,9 @@ function AppRoutes({ onLogout }) {
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/panchangam" element={<Panchangam />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/popular" element={<PopularPage />} />
+          <Route path="/continue-reading" element={<ContinueReadingPage />} />
         </Routes>
       </PageWrapper>
     </Layout>

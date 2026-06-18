@@ -136,14 +136,14 @@ export default function Splash({ onDone }) {
           </motion.div>
 
           {/* ── om symbol watermark ── */}
-          <motion.div
+          {/* <motion.div
             className="absolute text-white/4 pointer-events-none select-none"
             style={{ fontSize: 320, fontFamily: "serif", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
             animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.02, 1] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           >
             ॐ
-          </motion.div>
+          </motion.div> */}
 
         </motion.div>
       )}
