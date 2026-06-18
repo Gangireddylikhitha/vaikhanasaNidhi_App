@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, Tag, Plus, Pencil, Trash2, X,
-  Save, ChevronRight, LogOut, Search, BookMarked, Layers, ImagePlus, Image
+  Save, ChevronRight, LogOut, Search, BookMarked, Layers, ImagePlus, Image, FileUp, GalleryHorizontal
 } from 'lucide-react';
 import { getScriptures, saveScripture, deleteScripture, getCategories, saveCategory, deleteCategory } from '../store/scriptureStore';
 import { logout } from '../store/authStore';
 import logo from '../assets/images/logo.png';
+import PDFImportModal from '../components/PDFImportModal';
+import ImagesTab from './ImagesTab';
 
 const GOLD = 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)';
 const GOLD_DARK = '#8B6200';
@@ -27,9 +29,10 @@ const COLOR_OPTIONS = [
 ];
 
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'scriptures', label: 'Scriptures', icon: BookOpen },
-  { id: 'categories', label: 'Categories', icon: Tag },
+  { id: 'dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { id: 'scriptures', label: 'Scriptures',  icon: BookOpen },
+  { id: 'categories', label: 'Categories',  icon: Tag },
+  { id: 'images',     label: 'Images',      icon: GalleryHorizontal },
 ];
 
 /* ─── small reusable ─── */
@@ -356,6 +359,7 @@ function Scriptures({ scriptures, categories, setScriptures }) {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [modal, setModal] = useState(null); // null | 'add' | scripture obj
+  const [pdfModal, setPdfModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const filtered = scriptures.filter(s => {
@@ -369,6 +373,7 @@ function Scriptures({ scriptures, categories, setScriptures }) {
     saveScripture(form);
     setScriptures(getScriptures());
     setModal(null);
+    setPdfModal(false);
   }
 
   function handleDelete(id) {
@@ -393,6 +398,11 @@ function Scriptures({ scriptures, categories, setScriptures }) {
         <button onClick={() => setModal('add')}
           className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap btn-gold">
           <Plus size={15} /> Add Scripture
+        </button>
+        <button onClick={() => setPdfModal(true)}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white hover:bg-amber-50 transition-colors"
+          style={{ border: '1.5px solid #E4B24B55', color: GOLD_DARK }}>
+          <FileUp size={15} /> Import PDF
         </button>
       </div>
 
@@ -472,6 +482,13 @@ function Scriptures({ scriptures, categories, setScriptures }) {
 
       <p className="text-xs text-muted">{filtered.length} of {scriptures.length} scriptures</p>
 
+      {pdfModal && (
+        <PDFImportModal
+          categories={categories}
+          onSave={handleSave}
+          onClose={() => setPdfModal(false)}
+        />
+      )}
       {modal && (
         <ScriptureModal
           scripture={modal === 'add' ? null : modal}
@@ -687,6 +704,7 @@ export default function AdminPanel({ onLogout }) {
                   scriptures={scriptures}
                 />
               )}
+              {tab === 'images' && <ImagesTab />}
             </motion.div>
           </AnimatePresence>
         </main>

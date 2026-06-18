@@ -18,6 +18,7 @@ import PopularPage from './pages/PopularPage';
 import ContinueReadingPage from './pages/ContinueReadingPage';
 import LoginPage from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
+import Gallery from './pages/Gallery';
 import { hasSeenOnboarding, getSettings } from './store/useAppStore';
 import { getAuth, isAdmin, logout } from './store/authStore';
 import { applyTheme } from './lib/theme';
