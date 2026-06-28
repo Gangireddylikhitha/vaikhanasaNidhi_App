@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Type, Bell, Shield, HelpCircle, ChevronRight, Palette, Moon, Sun } from 'lucide-react';
 import { getSettings, saveSettings } from '../store/useAppStore';
+import { useUserSettings, useSettingsActions } from '../hooks/useUserData';
 import { applyTheme } from '../lib/theme';
 
 const FONT_OPTIONS = [
@@ -24,10 +26,24 @@ const COLOR_OPTIONS_LIGHT = [
 ];
 
 export default function SettingsDrawer({ open, onClose }) {
+  const { data: serverSettings } = useUserSettings();
+  const settingsMutation = useSettingsActions();
   const [settings, setSettings] = useState(getSettings());
 
   useEffect(() => {
-    if (open) setSettings(getSettings());
+    if (open) {
+      const next = serverSettings || getSettings();
+      setSettings(next);
+      saveSettings(next);
+      applyTheme(next);
+    }
+  }, [open, serverSettings]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
 
   function update(key, val) {
@@ -35,89 +51,120 @@ export default function SettingsDrawer({ open, onClose }) {
     setSettings(next);
     saveSettings(next);
     applyTheme(next);
+    settingsMutation.mutate(next);
   }
 
   const colorOptions = settings.themeMode === 'light' ? COLOR_OPTIONS_LIGHT : COLOR_OPTIONS_DARK;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50" style={{ background: 'var(--bg-overlay)' }} onClick={onClose} />
           <motion.div
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="settings-drawer fixed right-0 top-0 h-full w-80 max-w-full z-50 shadow-2xl flex flex-col">
-
-            <div className="flex items-center justify-between px-5 py-4 border-gold" style={{ borderBottomWidth: 1, borderBottomStyle: 'solid' }}>
-              <h2 className="font-semibold text-lg gold-glow" style={{ fontFamily: 'Playfair Display, serif' }}>Settings</h2>
-              <button onClick={onClose} className="text-muted hover:opacity-80"><X size={20} /></button>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="settings-overlay"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <motion.aside
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+            className="settings-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Settings"
+          >
+            <div className="settings-drawer-header flex items-center justify-between">
+              <h2 className="font-semibold text-scale-lg gold-glow" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Settings
+              </h2>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-elevated text-muted hover:opacity-80 transition-opacity"
+                style={{ border: '1px solid var(--border-subtle)' }}
+                aria-label="Close settings"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="settings-drawer-body">
               <Section title="Appearance">
-                <div className="px-4 py-3">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="settings-block">
+                  <div className="settings-row-label">
                     {settings.themeMode === 'dark' ? <Moon size={18} className="text-muted" /> : <Sun size={18} className="text-muted" />}
-                    <span className="flex-1 text-sm text-body">Theme</span>
+                    <span className="text-scale-sm text-body font-medium">Theme</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button
+                      type="button"
                       onClick={() => update('themeMode', 'dark')}
-                      className={`theme-pill flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold ${settings.themeMode === 'dark' ? 'active' : ''}`}
+                      className={`theme-pill flex items-center justify-center gap-2 py-3 rounded-xl text-scale-sm font-bold ${settings.themeMode === 'dark' ? 'active' : ''}`}
                     >
                       <Moon size={14} /> Dark
                     </button>
                     <button
+                      type="button"
                       onClick={() => update('themeMode', 'light')}
-                      className={`theme-pill flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold ${settings.themeMode === 'light' ? 'active' : ''}`}
+                      className={`theme-pill flex items-center justify-center gap-2 py-3 rounded-xl text-scale-sm font-bold ${settings.themeMode === 'light' ? 'active' : ''}`}
                     >
                       <Sun size={14} /> Light
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted mt-2 text-center">
+                  <p className="text-scale-xs text-muted mt-2 text-center">
                     {settings.themeMode === 'dark' ? 'Black background with gold glow' : 'White background with gold glow'}
                   </p>
                 </div>
               </Section>
 
               <Section title="Reading">
-                <div className="px-4 py-3">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="settings-block">
+                  <div className="settings-row-label">
                     <Type size={18} className="text-muted" />
-                    <span className="flex-1 text-sm text-body">Font size</span>
+                    <span className="text-scale-sm text-body font-medium">Font size</span>
                   </div>
                   <div className="flex gap-2">
                     {FONT_OPTIONS.map(s => (
-                      <button key={s.id}
+                      <button
+                        key={s.id}
+                        type="button"
                         onClick={() => update('fontSize', s.id)}
-                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all theme-pill ${settings.fontSize === s.id ? 'active' : ''}`}>
+                        className={`flex-1 py-2.5 rounded-lg text-scale-sm font-bold transition-all theme-pill ${settings.fontSize === s.id ? 'active' : ''}`}
+                      >
                         {s.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="px-4 py-3">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="settings-block">
+                  <div className="settings-row-label">
                     <Palette size={18} className="text-muted" />
-                    <span className="flex-1 text-sm text-body">Text brightness</span>
+                    <span className="text-scale-sm text-body font-medium">Text brightness</span>
                   </div>
                   <div className="space-y-2">
                     {colorOptions.map(opt => (
-                      <button key={opt.id}
+                      <button
+                        key={opt.id}
+                        type="button"
                         onClick={() => update('textColor', opt.id)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left bg-elevated"
                         style={{
                           border: settings.textColor === opt.id ? '1px solid var(--border-medium)' : '1px solid var(--border-subtle)',
                           background: settings.textColor === opt.id ? 'var(--hover-bg)' : 'var(--bg-elevated)',
-                        }}>
-                        <div className="w-6 h-6 rounded-full flex-shrink-0"
-                          style={{ background: opt.sample, boxShadow: `0 0 8px ${opt.sample}66` }} />
+                        }}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full flex-shrink-0"
+                          style={{ background: opt.sample, boxShadow: `0 0 8px ${opt.sample}66` }}
+                        />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-body">{opt.label}</p>
-                          <p className="text-xs text-muted">{opt.desc}</p>
+                          <p className="text-scale-sm font-semibold text-body">{opt.label}</p>
+                          <p className="text-scale-xs text-muted">{opt.desc}</p>
                         </div>
                         {settings.textColor === opt.id && (
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#C88F2D' }} />
@@ -127,14 +174,16 @@ export default function SettingsDrawer({ open, onClose }) {
                   </div>
                 </div>
 
-                <div className="mx-4 mb-3 p-3 rounded-xl page-bg" style={{ border: '1px solid var(--border-subtle)' }}>
-                  <p className="text-[10px] uppercase tracking-wider text-muted mb-2">Preview</p>
-                  <p className="font-telugu gold-glow-strong text-base mb-1" style={{ fontFamily: 'Tiro Telugu, serif' }}>
-                    ఓం నమో నారాయణాయ
-                  </p>
-                  <p className="font-telugu reading-meaning text-sm" style={{ fontFamily: 'Tiro Telugu, serif' }}>
-                    Salutations to Lord Narayana
-                  </p>
+                <div className="settings-block pb-4">
+                  <div className="gold-card p-3 rounded-xl" style={{ boxShadow: '0 4px 16px rgba(200,143,45,0.1)' }}>
+                    <p className="text-scale-xs uppercase tracking-wider text-muted mb-2">Preview</p>
+                    <p className="font-telugu gold-glow-strong text-scale-base mb-1" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                      ఓం నమో నారాయణాయ
+                    </p>
+                    <p className="font-telugu reading-meaning text-scale-sm" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                      Salutations to Lord Narayana
+                    </p>
+                  </div>
                 </div>
               </Section>
 
@@ -151,24 +200,23 @@ export default function SettingsDrawer({ open, onClose }) {
               </Section>
             </div>
 
-            <div className="px-5 py-4 text-center border-gold" style={{ borderTopWidth: 1, borderTopStyle: 'solid' }}>
-              <p className="font-telugu text-xs text-muted-light" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+            <div className="settings-drawer-footer text-center">
+              <p className="font-telugu text-scale-xs text-muted-light" style={{ fontFamily: 'Tiro Telugu, serif' }}>
                 వైఖానస నిధి v3.0 / © 2024
               </p>
             </div>
-          </motion.div>
+          </motion.aside>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 
 function Section({ title, children }) {
   return (
-    <div style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-      <div className="px-5 pt-4 pb-1">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted">{title}</span>
-      </div>
+    <div className="settings-section">
+      <div className="settings-section-title">{title}</div>
       {children}
     </div>
   );
@@ -176,13 +224,15 @@ function Section({ title, children }) {
 
 function ToggleRow({ icon: Icon, label, value, onChange }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div className="flex items-center gap-3 px-5 py-3 bg-[var(--drawer-bg)]">
       <Icon size={18} className="text-muted" />
-      <span className="flex-1 text-sm text-body">{label}</span>
+      <span className="flex-1 text-scale-sm text-body">{label}</span>
       <button
+        type="button"
         onClick={() => onChange(!value)}
-        className="w-11 h-6 rounded-full transition-all duration-200 relative"
+        className="w-11 h-6 rounded-full transition-all duration-200 relative flex-shrink-0"
         style={{ background: value ? 'linear-gradient(135deg, #C88F2D, #E4B24B)' : 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+        aria-pressed={value}
       >
         <span
           className={`absolute top-0.5 w-5 h-5 rounded-full shadow transition-all duration-200 ${value ? 'left-5' : 'left-0.5'}`}
@@ -195,11 +245,12 @@ function ToggleRow({ icon: Icon, label, value, onChange }) {
 
 function LinkRow({ icon: Icon, label }) {
   return (
-    <button className="flex items-center gap-3 px-4 py-3 w-full transition-colors" style={{ background: 'transparent' }}
-      onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+    <button
+      type="button"
+      className="flex items-center gap-3 px-5 py-3 w-full transition-colors bg-[var(--drawer-bg)] hover:bg-[var(--hover-bg)]"
+    >
       <Icon size={18} className="text-muted" />
-      <span className="flex-1 text-sm text-left text-body">{label}</span>
+      <span className="flex-1 text-scale-sm text-left text-body">{label}</span>
       <ChevronRight size={16} className="text-muted-light" />
     </button>
   );

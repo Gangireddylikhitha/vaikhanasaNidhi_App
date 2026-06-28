@@ -1,21 +1,33 @@
 import { Link } from "react-router-dom";
 import { Bookmark, BookOpen } from "lucide-react";
 import { getCategoryInfo } from "../data/scriptures";
-import { isBookmarked, addBookmark, removeBookmark } from "../store/useAppStore";
-import { useState } from "react";
+import { useBookmarks, useBookmarkActions } from "../hooks/useUserData";
+import { useState, useEffect } from "react";
 
 const GOLD = "#E4B24B";
 
 export default function ScriptureCard({ scripture, onBookmarkChange }) {
   const cat = getCategoryInfo(scripture.category);
-  const [bookmarked, setBookmarked] = useState(() => isBookmarked(scripture.id));
+  const { data: bookmarks = [] } = useBookmarks();
+  const { addMutation, removeMutation, isBookmarked } = useBookmarkActions();
+  const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    setBookmarked(isBookmarked(scripture.id, bookmarks));
+  }, [bookmarks, scripture.id, isBookmarked]);
 
   function toggleBookmark(e) {
     e.preventDefault();
     e.stopPropagation();
-    if (bookmarked) { removeBookmark(scripture.id); setBookmarked(false); }
-    else { addBookmark(scripture); setBookmarked(true); }
-    onBookmarkChange?.();
+    if (bookmarked) {
+      removeMutation.mutate(scripture.id, {
+        onSuccess: () => { setBookmarked(false); onBookmarkChange?.(); },
+      });
+    } else {
+      addMutation.mutate(scripture, {
+        onSuccess: () => { setBookmarked(true); onBookmarkChange?.(); },
+      });
+    }
   }
 
   return (

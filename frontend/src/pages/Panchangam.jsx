@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Moon, Clock, Star, Sunrise, Sunset, Sparkles } from "lucide-react";
+import { usePanchangam } from "../hooks/usePanchangam";
 import { getPanchangamForDate } from "../lib/panchangam";
 
 const GOLD = "#E4B24B";
@@ -17,14 +18,15 @@ const CARDS = [
 
 export default function Panchangam() {
   const [date, setDate] = useState(new Date());
-  const data = getPanchangamForDate(date);
+  const { data } = usePanchangam(date);
+  const panchangam = data || getPanchangamForDate(date);
 
   function prevDay() { setDate(d => { const n = new Date(d); n.setDate(n.getDate() - 1); return n; }); }
   function nextDay() { setDate(d => { const n = new Date(d); n.setDate(n.getDate() + 1); return n; }); }
 
   return (
     <div className="min-h-screen page-bg">
-      <div className="page-header-dark px-4 sm:px-6 pt-5 sm:pt-8 pb-5">
+      <div className="page-header px-4 sm:px-6 pt-5 sm:pt-8 pb-5">
         <div className="max-w-2xl mx-auto">
           <h1 className="font-telugu font-bold text-2xl sm:text-3xl mb-4 gold-glow"
             style={{ fontFamily: "Tiro Telugu, serif" }}>Panchangam</h1>
@@ -35,8 +37,8 @@ export default function Panchangam() {
             </button>
             <div className="flex-1 text-center">
               <p className="font-telugu font-bold text-base sm:text-lg leading-tight gold-glow"
-                style={{ fontFamily: "Tiro Telugu, serif" }}>{data.dateLabel}</p>
-              <p className="text-sm font-telugu text-muted" style={{ fontFamily: "Tiro Telugu, serif" }}>{data.day}</p>
+                style={{ fontFamily: "Tiro Telugu, serif" }}>{panchangam.dateLabel}</p>
+              <p className="text-sm font-telugu text-muted" style={{ fontFamily: "Tiro Telugu, serif" }}>{panchangam.day}</p>
             </div>
             <button onClick={nextDay} className="p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
               style={{ color: GOLD, border: '1px solid #C88F2D33' }}>
@@ -48,8 +50,8 @@ export default function Panchangam() {
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          className="mt-4 rounded-2xl p-4 flex items-center gap-3"
-          style={{ background: "#1a1a1a", border: '1px solid #4ade8044' }}>
+          className="mt-4 flex items-center gap-2 corner-card rounded-xl px-4 py-2.5 bg-elevated"
+          style={{ border: "1px solid rgba(74, 222, 128, 0.35)" }}>
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: '#4ade8018', border: '1px solid #4ade8033' }}>
             <Sparkles size={18} color="#4ade80" />
@@ -57,7 +59,7 @@ export default function Panchangam() {
           <div className="min-w-0">
             <p className="text-muted text-xs mb-0.5">Auspicious Time</p>
             <p className="font-telugu font-semibold text-sm sm:text-base"
-              style={{ fontFamily: "Tiro Telugu, serif", color: '#86efac' }}>{data.auspicious}</p>
+              style={{ fontFamily: "Tiro Telugu, serif", color: '#86efac' }}>{panchangam.auspicious}</p>
           </div>
         </motion.div>
 
@@ -77,7 +79,7 @@ export default function Panchangam() {
                 </div>
                 <p className="font-telugu text-lg sm:text-xl font-bold gold-glow"
                   style={{ fontFamily: "Tiro Telugu, serif" }}>
-                  {data[card.key]}
+                  {panchangam[card.key]}
                 </p>
               </motion.div>
             );
@@ -89,9 +91,9 @@ export default function Panchangam() {
             style={{ fontFamily: "Tiro Telugu, serif" }}>Full Details</h3>
           <div>
             {[
-              ["Date", data.dateLabel], ["Day", data.day], ["Tithi", data.tithi],
-              ["Nakshatra", data.nakshatra], ["Rahukalam", data.rahukalam],
-              ["Yamagandam", data.yamagandam], ["Sunrise", data.sunrise], ["Sunset", data.sunset],
+              ["Date", panchangam.dateLabel], ["Day", panchangam.day], ["Tithi", panchangam.tithi],
+              ["Nakshatra", panchangam.nakshatra], ["Rahukalam", panchangam.rahukalam],
+              ["Yamagandam", panchangam.yamagandam], ["Sunrise", panchangam.sunrise], ["Sunset", panchangam.sunset],
             ].map(([label, value], idx) => (
               <div key={label} className="flex items-center justify-between py-3"
                 style={{ borderTop: idx > 0 ? '1px solid #C88F2D15' : undefined }}>

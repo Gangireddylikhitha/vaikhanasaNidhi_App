@@ -1,17 +1,33 @@
 {
-  "name": "backend",
+  "name": "vaikhanasa-nidhi-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Vaikhanasa Nidhi App API",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node --watch src/server.js",
+    "start:once": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate:split-categories": "node scripts/splitCategoryCollections.js",
+    "migrate:prune-categories": "node scripts/pruneExtraCategories.js",
+    "migrate:audit": "node scripts/migrateFirestore.js --audit",
+    "migrate:firestore": "node scripts/migrateFirestore.js",
+    "migrate:firestore:dry": "node scripts/migrateFirestore.js --dry-run --limit=5",
+    "migrate:list-databases": "node scripts/listFirestoreDatabases.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "dotenv": "^16.5.0",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.0",
+    "multer": "^2.2.0",
+    "nodemon": "^3.1.14"
   }
 }

@@ -1,3 +1,5 @@
+import { VISHNU_SAHASRANAMA_SLOKAS } from "./sahasraNamalu";
+
 export const SCRIPTURES = [
   {
     id: "1",
@@ -22,10 +24,7 @@ export const SCRIPTURES = [
     description: "మహాభారతంలోని శాంతిపర్వంలో భీష్మపితామహుడు ధర్మరాజుకు ఉపదేశించిన విష్ణుమూర్తి వేయి నామాల పవిత్ర స్తోత్రం.",
     cover_url: null,
     popularity: 96,
-    verses: [
-      { telugu: "విశ్వం విష్ణుర్వషట్కారో భూతభవ్యభవత్ప్రభుః\nభూతకృద్భూతభృద్భావో భూతాత్మా భూతభావనః", meaning: "విశ్వమంతటా వ్యాపించినవాడు. సర్వ భూతాలకు ప్రభువు. భూతాలను సృష్టించువాడు. భూతాల ఆత్మ స్వరూపుడు." },
-      { telugu: "పూతాత్మా పరమాత్మా చ ముక్తానాం పరమా గతిః\nఅవ్యయః పురుషః సాక్షీ క్షేత్రజ్ఞోఽక్షర ఏవ చ", meaning: "పవిత్రాత్ముడు. పరమాత్ముడు. మోక్షం పొందిన వారికి పరమగతి. నాశనం లేనివాడు. ఆదిపురుషుడు." },
-    ]
+    verses: VISHNU_SAHASRANAMA_SLOKAS.map(({ telugu, meaning }) => ({ telugu, meaning })),
   },
   {
     id: "3",
@@ -169,6 +168,12 @@ export const SCRIPTURES = [
   },
 ];
 
+/** Static list for Home — Recent Addon Scriptures section (edit ids to update) */
+const RECENT_ADDON_IDS = ["12", "11", "10", "9", "8", "7", "6", "5"];
+export const RECENT_ADDON_SCRIPTURES = RECENT_ADDON_IDS
+  .map(id => SCRIPTURES.find(s => s.id === id))
+  .filter(Boolean);
+
 export const DAILY_SLOKAS = [
   { telugu: "నమోస్త్వనంతాయ సహస్రమూర్తయే సహస్రపాదాక్షిశిరోరుబాహవే ।\nసహస్రనామ్నే పురుషాయ శాశ్వతే సహస్రకోటీయుగధారిణే నమః ॥", meaning: "అనంతుడు, వేలకొలది శరీరములు కలవాడు, లక్షల కాళ్లు పాదములు, కన్నులు, శిరస్సులు గలవాడు, వేయి నామములు గల శాశ్వత పురుషుడు, కోట్ల యుగాలను ధరించి నడిపే పరమాత్మునికి వందనములు.", source: "శ్రీ విష్ణు సహస్రనామ ప్రార్థన" },
   { telugu: "శ్రీ మన్నారాయణ చరణౌ శరణం ప్రపద్యే", meaning: "శ్రీమన్నారాయణుని పాదపద్మాలను శరణు వేడుతున్నాను", source: "వైఖానస ఆగమం" },
@@ -187,8 +192,10 @@ export const getCategoryInfo = (category) => {
     sahasranamam: { label: "సహస్రనామం", color: "from-blue-700 to-indigo-900", bg: "bg-blue-700", text: "text-blue-700" },
     agama: { label: "ఆగమం", color: "from-teal-700 to-emerald-900", bg: "bg-teal-700", text: "text-teal-700" },
     pooja_vidhanam: { label: "పూజా విధానం", color: "from-yellow-600 to-amber-700", bg: "bg-yellow-600", text: "text-yellow-600" },
-    panchangam: { label: "పంచాంగం", color: "from-sky-600 to-blue-800", bg: "bg-sky-600", text: "text-sky-600" },
     book: { label: "గ్రంథం", color: "from-stone-600 to-stone-800", bg: "bg-stone-600", text: "text-stone-600" },
+    alaya_viseshalu: { label: "ఆలయ విశేషాలు", color: "from-amber-700 to-orange-900", bg: "bg-amber-700", text: "text-amber-700" },
+    sandeha_nivrutti: { label: "సందేహ నివృత్తి", color: "from-indigo-700 to-violet-900", bg: "bg-indigo-700", text: "text-indigo-700" },
+    chitralu: { label: "చిత్రాలు", color: "from-rose-600 to-pink-800", bg: "bg-rose-600", text: "text-rose-600" },
   };
   return map[category] || map.stotra;
 };

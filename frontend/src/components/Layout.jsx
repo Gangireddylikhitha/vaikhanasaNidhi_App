@@ -26,14 +26,21 @@ export default function Layout({ children, onLogout }) {
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', handler);
+    window.addEventListener('scroll', handler, { passive: true });
     return () => window.removeEventListener('scroll', handler);
   }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [drawerOpen]);
 
   const isActive = (to) => location.pathname === to;
 
   return (
-    <div className="min-h-screen flex flex-col page-bg">
+    <div className="min-h-dvh flex flex-col page-bg">
 
       {/* Top Navigation — desktop & tablet */}
       <header
@@ -120,10 +127,9 @@ export default function Layout({ children, onLogout }) {
             <motion.aside
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="settings-drawer fixed left-0 top-0 h-full w-72 z-50 shadow-2xl flex flex-col lg:hidden"
-              style={{ borderRight: '1px solid var(--border-subtle)' }}
+              className="nav-drawer z-50 lg:hidden"
             >
-              <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+              <div className="flex-shrink-0 flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid var(--border-medium)', boxShadow: '0 0 12px rgba(200,143,45,0.2)' }}>
                     <img src={LOGO} alt="Vaikhanasa Nidhi" className="w-9 h-9 object-contain" />
@@ -135,51 +141,53 @@ export default function Layout({ children, onLogout }) {
                 </div>
                 <button onClick={() => setDrawerOpen(false)} style={{ color: GOLD }}><X size={20} /></button>
               </div>
-              <nav className="flex-1 px-4 py-6 flex flex-col gap-1">
-                {NAV_LINKS.map(({ to, icon: Icon, label }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-telugu text-sm transition-all"
-                    style={{
-                      background: isActive(to) ? '#C88F2D18' : 'transparent',
-                      color: isActive(to) ? GOLD : '#C88F2D99',
-                      fontFamily: 'Tiro Telugu, serif',
-                      textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : 'none',
-                    }}
-                  >
-                    <Icon size={18} />
-                    {label}
-                  </Link>
-                ))}
-              </nav>
-              <div className="px-4 pb-6 space-y-1">
-                <button
-                  onClick={() => { setDrawerOpen(false); setSettingsOpen(true); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl w-full font-telugu text-sm hover:bg-white/5 transition-all"
-                  style={{ color: '#C88F2D99', fontFamily: 'Tiro Telugu, serif' }}
-                >
-                  <Settings size={18} /> సెట్టింగ్స్
-                </button>
-                {onLogout && (
+              <div className="panel-scroll scrollbar-hide">
+                <nav className="px-4 py-4 flex flex-col gap-1">
+                  {NAV_LINKS.map(({ to, icon: Icon, label }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-telugu text-sm transition-all"
+                      style={{
+                        background: isActive(to) ? '#C88F2D18' : 'transparent',
+                        color: isActive(to) ? GOLD : '#C88F2D99',
+                        fontFamily: 'Tiro Telugu, serif',
+                        textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : 'none',
+                      }}
+                    >
+                      <Icon size={18} />
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+                <div className="px-4 pb-6 space-y-1">
                   <button
-                    onClick={() => { setDrawerOpen(false); onLogout(); }}
+                    onClick={() => { setDrawerOpen(false); setSettingsOpen(true); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl w-full font-telugu text-sm hover:bg-white/5 transition-all"
-                    style={{ color: '#C88F2D66', fontFamily: 'Tiro Telugu, serif' }}
+                    style={{ color: '#C88F2D99', fontFamily: 'Tiro Telugu, serif' }}
                   >
-                    <LogOut size={18} /> లాగ్అవుట్
+                    <Settings size={18} /> సెట్టింగ్స్
                   </button>
-                )}
-                <div className="mt-3 text-center text-xs" style={{ color: '#C88F2D44' }}>వైఖానస నిధి v3.0</div>
+                  {onLogout && (
+                    <button
+                      onClick={() => { setDrawerOpen(false); onLogout(); }}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl w-full font-telugu text-sm hover:bg-white/5 transition-all"
+                      style={{ color: '#C88F2D66', fontFamily: 'Tiro Telugu, serif' }}
+                    >
+                      <LogOut size={18} /> లాగ్అవుట్
+                    </button>
+                  )}
+                  <div className="mt-3 text-center text-xs" style={{ color: '#C88F2D44' }}>వైఖానస నిధి v3.0</div>
+                </div>
               </div>
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
-      <main className="flex-1 pb-20 lg:pb-0 pt-14 lg:pt-16 overflow-x-hidden min-w-0">
+      {/* Main Content — document scroll on mobile (no nested overflow trap) */}
+      <main className="flex-1 w-full min-w-0 pb-20 lg:pb-0 pt-14 lg:pt-16">
         {children}
       </main>
 

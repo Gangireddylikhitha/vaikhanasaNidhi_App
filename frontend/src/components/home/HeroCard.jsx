@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, BookOpen, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
-import { DAILY_SLOKAS } from "../../data/scriptures";
+import { getDailySahasranamaSloka, getDailySahasranamaIndex, msUntilMidnight } from "../../lib/dailySloka";
 import heroImg from "../../assets/images/heroImg.png";
 
 export default function HeroCard() {
-  const sloka = DAILY_SLOKAS[0];
+  const [sloka, setSloka] = useState(getDailySahasranamaSloka);
   const [open, setOpen] = useState(false);
   const [showMeaning, setShowMeaning] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSloka(getDailySahasranamaSloka()), msUntilMidnight());
+    return () => clearTimeout(timer);
+  }, [sloka]);
 
   function handleShare() {
     if (navigator.share) navigator.share({ title: "Vaikhanasa Nidhi", text: sloka.telugu });
@@ -40,7 +45,9 @@ export default function HeroCard() {
           <div className="hero-content">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
               <Sparkles size={13} className="text-primary-gold flex-shrink-0" />
-              <span className="hero-eyebrow">{sloka.source}</span>
+              <span className="hero-eyebrow">
+                {sloka.source || `శ్రీ విష్ణు సహస్రనామం — శ్లోకం ${getDailySahasranamaIndex()}`}
+              </span>
             </div>
 
             <h1
@@ -74,9 +81,9 @@ export default function HeroCard() {
               </button>
             </div>
 
-            <Link to="/search" className="btn-gold hero-cta">
+            <Link to="/read/2" className="btn-gold hero-cta">
               <span className="font-telugu" style={{ fontFamily: "Tiro Telugu, serif" }}>
-                ప్రయాణాన్ని ప్రారంభించండి
+                సహస్రనామం చదవండి
               </span>
               <Sparkles size={14} />
             </Link>
@@ -104,7 +111,7 @@ export default function HeroCard() {
                   <Sparkles size={14} className="text-primary-gold" />
                   <div>
                     <p className="font-bold text-sm gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
-                      నేటి దివ్య శ్లోకం
+                      నేటి విష్ణు సహస్రనామ శ్లోకం — {getDailySahasranamaIndex()}
                     </p>
                     <p className="text-xs text-muted">{sloka.source}</p>
                   </div>
@@ -137,8 +144,8 @@ export default function HeroCard() {
                       <button onClick={handleShare} className="btn-ghost flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium active:scale-95 transition-all">
                         <Share2 size={15} /> Share
                       </button>
-                      <Link to="/search" onClick={() => setOpen(false)} className="btn-gold flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold active:scale-95 transition-all">
-                        <BookOpen size={15} /> Read More
+                      <Link to="/read/2" onClick={() => setOpen(false)} className="btn-gold flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold active:scale-95 transition-all">
+                        <BookOpen size={15} /> Full Sahasranama
                       </Link>
                     </div>
                   </div>

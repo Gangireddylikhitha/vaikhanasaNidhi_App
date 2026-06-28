@@ -2,23 +2,36 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Bookmark, Share2, ZoomIn, ZoomOut, Copy, Check, BookOpen } from "lucide-react";
-import { SCRIPTURES, getCategoryInfo } from "../data/scriptures";
-import { isBookmarked, addBookmark, removeBookmark, saveReadingProgress, getSettings } from "../store/useAppStore";
+import { getCategoryInfo } from "../data/scriptures";
+import { isImageGalleryScripture } from "../utils/scriptureSubcategoryMatch";
+import { usePublicScripture, usePublicScriptures } from "../hooks/usePublicScriptures";
+import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
+import { useBookmarks, useBookmarkActions, useProgressActions } from "../hooks/useUserData";
+import { getSettings } from "../store/useAppStore";
 import { getReaderBaseFontSize } from "../lib/theme";
 import { toast } from "sonner";
 
 export default function Reader() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const scripture = SCRIPTURES.find(s => s.id === id);
+  const { data: scripture, isLoading, isError, refetch } = usePublicScripture(id);
+  const { data: allScriptures = [] } = usePublicScriptures();
+  const { data: bookmarks = [] } = useBookmarks();
+  const { addMutation, removeMutation, isBookmarked: checkBookmarked } = useBookmarkActions();
+  const progressMutation = useProgressActions();
   const [fontSize, setFontSize] = useState(() => getReaderBaseFontSize(getSettings().fontSize));
-  const [bookmarked, setBookmarked] = useState(() => isBookmarked(id));
+  const [bookmarked, setBookmarked] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const containerRef = useRef(null);
+  const lastProgressSave = useRef(0);
+
+  useEffect(() => {
+    setBookmarked(checkBookmarked(id, bookmarks));
+  }, [id, bookmarks, checkBookmarked]);
 
   const related = scripture
-    ? SCRIPTURES.filter(s => s.category === scripture.category && s.id !== scripture.id).slice(0, 3)
+    ? allScriptures.filter(s => s.category === scripture.category && s.id !== scripture.id).slice(0, 3)
     : [];
 
   useEffect(() => {
@@ -31,18 +44,28 @@ export default function Reader() {
 
   useEffect(() => {
     if (!scripture) return;
+    const gallery = isImageGalleryScripture(scripture);
+    const count = gallery ? (scripture.images?.length || 0) : (scripture.verses?.length || 0);
     const handler = () => {
       const total = document.documentElement.scrollHeight - window.innerHeight;
       const pct = total > 0 ? Math.round((window.scrollY / total) * 100) : 0;
       setScrollProgress(pct);
-      if (pct > 5) {
-        const lv = Math.floor((pct / 100) * scripture.verses.length);
-        saveReadingProgress(scripture, Math.min(pct, 100), lv);
+      if (!gallery && pct > 5) {
+        const lv = Math.floor((pct / 100) * Math.max(count, 1));
+        const now = Date.now();
+        if (now - lastProgressSave.current > 2500) {
+          lastProgressSave.current = now;
+          progressMutation.mutate({
+            scripture,
+            progress: Math.min(pct, 100),
+            lastVerse: lv,
+          });
+        }
       }
     };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
-  }, [scripture]);
+  }, [scripture, progressMutation]);
 
   function copyVerse(verse, idx) {
     navigator.clipboard?.writeText(verse.telugu + "\n\n" + verse.meaning);
@@ -52,14 +75,37 @@ export default function Reader() {
   }
 
   function toggleBookmark() {
-    if (bookmarked) { removeBookmark(id); setBookmarked(false); toast.info("Bookmark removed"); }
-    else { addBookmark(scripture); setBookmarked(true); toast.success("Bookmarked!"); }
+    if (bookmarked) {
+      removeMutation.mutate(id, {
+        onSuccess: () => { setBookmarked(false); toast.info("Bookmark removed"); },
+      });
+    } else {
+      addMutation.mutate(scripture, {
+        onSuccess: () => { setBookmarked(true); toast.success("Bookmarked!"); },
+      });
+    }
   }
 
   function handleShare() {
     const text = scripture.title_telugu + "\n\n" + (scripture.verses[0]?.telugu || "");
     if (navigator.share) navigator.share({ title: scripture.title_telugu, text });
     else { navigator.clipboard?.writeText(text); toast.success("Copied!"); }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen page-bg">
+        <ScriptureLoadingState message="Loading scripture…" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen page-bg">
+        <ScriptureErrorState message="Could not load this scripture." onRetry={refetch} />
+      </div>
+    );
   }
 
   if (!scripture) {
@@ -78,6 +124,8 @@ export default function Reader() {
   }
 
   const cat = getCategoryInfo(scripture.category);
+  const isGallery = isImageGalleryScripture(scripture);
+  const itemCount = isGallery ? (scripture.images?.length || 0) : (scripture.verses?.length || 0);
 
   return (
     <div ref={containerRef} className="min-h-screen pb-12 page-bg">
@@ -150,7 +198,7 @@ export default function Reader() {
                     style={{ background: 'linear-gradient(90deg, #C88F2D, #E4B24B)', width: scrollProgress + "%" }} />
                 </div>
                 <span className="text-muted text-xs flex-shrink-0">
-                  {scripture.verses.length} verses
+                  {isGallery ? `${itemCount} images` : `${itemCount} verses`}
                 </span>
               </div>
             </div>
@@ -166,7 +214,29 @@ export default function Reader() {
           )}
 
           <div className="mx-3 sm:mx-6 xl:mx-0 mt-4 space-y-4">
-            {scripture.verses.map((verse, idx) => (
+            {isGallery ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(scripture.images || []).map((img, idx) => (
+                  <motion.div
+                    key={img.url || idx}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-40px' }}
+                    transition={{ delay: Math.min(idx * 0.06, 0.3) }}
+                    className="corner-card rounded-2xl overflow-hidden reader-border"
+                  >
+                    <img src={img.url} alt={img.caption || scripture.title_telugu} className="w-full h-auto object-cover" />
+                    {img.caption && (
+                      <p className="px-4 py-3 text-sm text-muted border-t border-[var(--border-subtle)]"
+                        style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                        {img.caption}
+                      </p>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              scripture.verses.map((verse, idx) => (
               <motion.div key={idx}
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -217,7 +287,8 @@ export default function Reader() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            ))
+            )}
           </div>
 
           <div className="mx-3 sm:mx-6 xl:mx-0 mt-8 text-center pb-4">

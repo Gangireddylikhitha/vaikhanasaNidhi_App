@@ -2,30 +2,52 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bookmark, Trash2, BookOpen, BookmarkX, Grid, List } from "lucide-react";
-import { getBookmarks, removeBookmark } from "../store/useAppStore";
-import { getCategoryInfo, SCRIPTURES } from "../data/scriptures";
+import { usePublicScriptures } from "../hooks/usePublicScriptures";
+import { useBookmarks, useBookmarkActions } from "../hooks/useUserData";
+import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
 import ScriptureCard from "../components/ScriptureCard";
 import { toast } from "sonner";
 
 const GOLD = "#E4B24B";
 
 export default function Bookmarks() {
-  const [bookmarks, setBookmarks] = useState(getBookmarks);
   const [view, setView] = useState("list");
+  const { data: bookmarks = [], isLoading: bookmarksLoading } = useBookmarks();
+  const { removeMutation } = useBookmarkActions();
+  const { data: scriptures = [], isLoading: scripturesLoading, isError, refetch } = usePublicScriptures();
+
+  const isLoading = bookmarksLoading || scripturesLoading;
 
   function remove(id) {
-    removeBookmark(id);
-    setBookmarks(getBookmarks());
-    toast.success("Removed");
+    removeMutation.mutate(id, {
+      onSuccess: () => toast.success("Removed"),
+      onError: () => toast.error("Could not remove bookmark"),
+    });
   }
 
   const bookmarkedScriptures = bookmarks
-    .map(b => SCRIPTURES.find(s => s.id === b.scripture_id))
+    .map((b) => scriptures.find((s) => s.id === b.scripture_id))
     .filter(Boolean);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen page-bg">
+        <ScriptureLoadingState />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen page-bg">
+        <ScriptureErrorState onRetry={refetch} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen page-bg">
-      <div className="page-header-dark px-4 sm:px-6 pt-5 sm:pt-8 pb-5 sm:pb-6">
+      <div className="page-header px-4 sm:px-6 pt-5 sm:pt-8 pb-5 sm:pb-6">
         <div className="max-w-4xl mx-auto flex items-end justify-between">
           <div>
             <h1 className="font-telugu font-bold text-2xl sm:text-3xl mb-1 gold-glow"
@@ -49,85 +71,56 @@ export default function Bookmarks() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-4 pb-28">
-        <AnimatePresence mode="wait">
-
-          {bookmarks.length === 0 && (
-            <motion.div key="empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              className="text-center py-24">
-              <div className="w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center corner-card"
-                style={{ border: '1px solid #C88F2D33' }}>
-                <BookmarkX size={36} color={GOLD} />
-              </div>
-              <p className="font-telugu text-xl font-semibold mb-2 gold-glow"
-                style={{ fontFamily: "Tiro Telugu, serif" }}>No Bookmarks</p>
-              <p className="text-muted text-sm mb-6">Tap the bookmark icon while reading to save</p>
-              <Link to="/search"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-sm btn-gold">
-                <BookOpen size={16} /> Browse Scriptures
-              </Link>
-            </motion.div>
-          )}
-
-          {bookmarks.length > 0 && view === "grid" && (
-            <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+      <div className="px-4 sm:px-6 max-w-4xl mx-auto pb-28">
+        {bookmarks.length === 0 ? (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            className="corner-card rounded-2xl p-12 text-center mt-4">
+            <BookmarkX size={40} className="mx-auto mb-4 text-muted opacity-40" />
+            <p className="font-bold text-base gold-glow mb-1" style={{ fontFamily: "Tiro Telugu, serif" }}>
+              No bookmarks yet
+            </p>
+            <p className="text-sm text-muted mb-6">Save scriptures while reading to find them here</p>
+            <Link to="/search" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold btn-gold">
+              <BookOpen size={14} /> Browse Scriptures
+            </Link>
+          </motion.div>
+        ) : view === "list" ? (
+          <div className="space-y-2 mt-2">
+            <AnimatePresence>
               {bookmarkedScriptures.map((s, i) => (
-                <motion.div key={s.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.04 }}>
-                  <ScriptureCard scripture={s} onBookmarkChange={() => setBookmarks(getBookmarks())} />
+                <motion.div key={s.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.03 }}>
+                  <div className="corner-card rounded-2xl flex items-center gap-3 p-3">
+                    <Link to={`/read/${s.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-elevated flex-shrink-0"
+                        style={{ border: '1px solid var(--border-medium)' }}>
+                        <span className="font-bold gold-glow text-sm" style={{ fontFamily: "Tiro Telugu, serif" }}>
+                          {s.title_telugu.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
+                          {s.title_telugu}
+                        </p>
+                        <p className="text-xs text-muted truncate">{s.title_english}</p>
+                      </div>
+                    </Link>
+                    <button onClick={() => remove(s.id)} disabled={removeMutation.isPending}
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </motion.div>
               ))}
-            </motion.div>
-          )}
-
-          {bookmarks.length > 0 && view === "list" && (
-            <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="space-y-3">
-              {bookmarks.map((b, i) => {
-                const cat = getCategoryInfo(b.category);
-                return (
-                  <motion.div key={b.scripture_id}
-                    initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }} transition={{ delay: i * 0.04 }}
-                    layout
-                    className="corner-card rounded-2xl overflow-hidden flex hover:brightness-110 transition-all">
-                    <div className="w-1 flex-shrink-0" style={{ background: 'linear-gradient(180deg, #C88F2D, #E4B24B)' }} />
-                    <div className="flex-1 p-3 sm:p-4 flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-elevated"
-                        style={{ border: '1px solid var(--border-medium)' }}>
-                        <Bookmark size={16} color={GOLD} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-telugu font-medium"
-                            style={{ background: "#C88F2D22", color: GOLD, fontFamily: "Tiro Telugu, serif", border: '1px solid #C88F2D33' }}>
-                            {cat.label}
-                          </span>
-                          {b.deity && <span className="text-muted text-xs hidden sm:inline">{b.deity}</span>}
-                        </div>
-                        <p className="font-telugu font-semibold text-sm sm:text-base truncate gold-glow"
-                          style={{ fontFamily: "Tiro Telugu, serif" }}>
-                          {b.title_telugu}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Link to={"/read/" + b.scripture_id}
-                          className="p-2 sm:p-2.5 rounded-xl transition-colors hover:bg-white/5 text-muted hover:text-white">
-                          <BookOpen size={16} />
-                        </Link>
-                        <button onClick={() => remove(b.scripture_id)}
-                          className="p-2 sm:p-2.5 rounded-xl hover:bg-red-500/10 text-muted hover:text-red-400 transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+            {bookmarkedScriptures.map((s) => (
+              <ScriptureCard key={s.id} scripture={s} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

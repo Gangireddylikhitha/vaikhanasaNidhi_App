@@ -19,8 +19,8 @@ export default function Splash({ onDone }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
-          style={{ background: "linear-gradient(160deg, #1a0a00 0%, #2e0d0d 40%, #0f0a00 100%)" }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden page-bg"
+          style={{ backgroundImage: "var(--hero-glow)" }}
         >
 
           {/* ── ambient glow rings ── */}
@@ -113,7 +113,7 @@ export default function Splash({ onDone }) {
               >
                 వైఖానస మహాగురవే నమః
               </p>
-              <p className="text-white/40 text-xs tracking-[0.3em] mt-1 uppercase">Sacred Scripture Library</p>
+              <p className="text-muted text-xs tracking-[0.3em] mt-1 uppercase">Sacred Scripture Library</p>
             </motion.div>
           </motion.div>
 

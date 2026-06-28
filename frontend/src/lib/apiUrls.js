@@ -1,0 +1,34 @@
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+export const health = '/health';
+export const signup = '/auth/signup';
+export const login = '/auth/login';
+export const adminLogin = '/auth/admin/login';
+export const guest = '/auth/guest';
+export const me = '/auth/me';
+export const logout = '/auth/logout';
+
+export const adminDashboard = '/admin/dashboard';
+export const adminScriptures = '/admin/scriptures';
+export const adminScriptureById = (id) => `/admin/scriptures/${id}`;
+export const adminCategories = '/admin/categories';
+export const adminCategoryById = (id) => `/admin/categories/${id}`;
+export const adminSubcategories = '/admin/subcategories';
+export const adminSubcategoryById = (id) => `/admin/subcategories/${id}`;
+export const adminUploadSubcategoryImage = '/admin/uploads/subcategory-image';
+export const adminUploadScriptureImages = '/admin/uploads/scripture-images';
+
+export const scriptures = '/scriptures';
+export const recentScriptures = '/scriptures/recent';
+export const scriptureById = (id) => `/scriptures/${id}`;
+export const subcategories = '/subcategories';
+export const panchangam = '/panchangam';
+
+export const userData = '/users/me/data';
+export const userSync = '/users/me/sync';
+export const userBookmarks = '/users/me/bookmarks';
+export const userBookmarkById = (id) => `/users/me/bookmarks/${id}`;
+export const userProgress = '/users/me/progress';
+export const userSettings = '/users/me/settings';
+export const userProfile = '/users/me';

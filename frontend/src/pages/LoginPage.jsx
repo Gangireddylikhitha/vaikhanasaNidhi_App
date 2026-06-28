@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Shield, Eye, EyeOff, LogIn, UserPlus, ArrowRight } from 'lucide-react';
-import { loginAsUser, loginAsAdmin, signup, continueAsGuest } from '../store/authStore';
+import { User, Shield, Eye, EyeOff, LogIn, UserPlus, ArrowRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useSignup, useLogin, useAdminLogin, useGuestLogin } from '../hooks/useAuth';
+import { mapAuthError } from '../lib/apiError';
 import logo from '../assets/images/logo.png';
 
 function PasswordInput({ value, onChange, placeholder, required }) {
@@ -32,22 +34,27 @@ function Field({ label, children }) {
   );
 }
 
-function SignUpForm({ onDone, onSwitch }) {
+function SignUpForm({ onSwitch, onSignupSuccess }) {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState('');
+
+  const signupMutation = useSignup({
+    onSuccess: () => {
+      toast.success('Account created! Please login with your username and password.');
+      onSignupSuccess?.('Account created! Please login with your username and password.');
+      onSwitch('login');
+    },
+    onError: (err) => toast.error(mapAuthError(err)),
+  });
 
   function handle(e) {
     e.preventDefault();
-    setError('');
-    if (!username.trim()) return setError('Username is required.');
-    if (pass.length < 4) return setError('Password must be at least 4 characters.');
-    if (pass !== confirm) return setError('Passwords do not match.');
-    const result = signup(name, username, pass);
-    if (result === 'username_taken') return setError('Username already taken. Choose another.');
-    onDone('user');
+    if (!username.trim()) return toast.error('Username is required.');
+    if (pass.length < 4) return toast.error('Password must be at least 4 characters.');
+    if (pass !== confirm) return toast.error('Passwords do not match.');
+    signupMutation.mutate({ name, username, password: pass });
   }
 
   return (
@@ -66,9 +73,10 @@ function SignUpForm({ onDone, onSwitch }) {
       <Field label="Confirm Password *">
         <PasswordInput value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat password" required />
       </Field>
-      {error && <p className="form-error">{error}</p>}
-      <button type="submit" className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm">
-        <UserPlus size={16} /> Create Account
+      <button type="submit" disabled={signupMutation.isPending}
+        className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm disabled:opacity-60">
+        {signupMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+        {signupMutation.isPending ? 'Creating...' : 'Create Account'}
       </button>
       <p className="text-center text-xs text-muted">
         Already have an account?{' '}
@@ -80,18 +88,21 @@ function SignUpForm({ onDone, onSwitch }) {
   );
 }
 
-function UserLoginForm({ onDone, onSwitch }) {
+function UserLoginForm({ onDone, onSwitch, successMessage }) {
   const [username, setUsername] = useState('');
   const [pass, setPass] = useState('');
-  const [error, setError] = useState('');
+
+  const loginMutation = useLogin({
+    onSuccess: () => {
+      toast.success('Login successful!');
+      onDone();
+    },
+    onError: (err) => toast.error(mapAuthError(err)),
+  });
 
   function handle(e) {
     e.preventDefault();
-    setError('');
-    const result = loginAsUser(username.trim(), pass);
-    if (result === 'not_found') return setError('No account found with that username.');
-    if (result === 'wrong_password') return setError('Incorrect password. Try again.');
-    onDone('user');
+    loginMutation.mutate({ username: username.trim(), password: pass });
   }
 
   return (
@@ -103,9 +114,11 @@ function UserLoginForm({ onDone, onSwitch }) {
       <Field label="Password">
         <PasswordInput value={pass} onChange={e => setPass(e.target.value)} required />
       </Field>
-      {error && <p className="form-error">{error}</p>}
-      <button type="submit" className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm">
-        <LogIn size={16} /> Login
+      {successMessage && <p className="text-sm text-center gold-glow">{successMessage}</p>}
+      <button type="submit" disabled={loginMutation.isPending}
+        className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm disabled:opacity-60">
+        {loginMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
+        {loginMutation.isPending ? 'Logging in...' : 'Login'}
       </button>
       <p className="text-center text-xs text-muted">
         New here?{' '}
@@ -120,13 +133,18 @@ function UserLoginForm({ onDone, onSwitch }) {
 function AdminLoginForm({ onDone }) {
   const [username, setUsername] = useState('');
   const [pass, setPass] = useState('');
-  const [error, setError] = useState('');
+
+  const adminLogin = useAdminLogin({
+    onSuccess: () => {
+      toast.success('Admin login successful!');
+      onDone();
+    },
+    onError: (err) => toast.error(mapAuthError(err)),
+  });
 
   function handle(e) {
     e.preventDefault();
-    setError('');
-    if (loginAsAdmin(username.trim(), pass)) onDone('admin');
-    else setError('Invalid credentials.');
+    adminLogin.mutate({ username: username.trim(), password: pass });
   }
 
   return (
@@ -138,9 +156,10 @@ function AdminLoginForm({ onDone }) {
       <Field label="Password">
         <PasswordInput value={pass} onChange={e => setPass(e.target.value)} required />
       </Field>
-      {error && <p className="form-error">{error}</p>}
-      <button type="submit" className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm">
-        <Shield size={16} /> Login as Admin
+      <button type="submit" disabled={adminLogin.isPending}
+        className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm disabled:opacity-60">
+        {adminLogin.isPending ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
+        {adminLogin.isPending ? 'Logging in...' : 'Login as Admin'}
       </button>
       <p className="text-center text-xs text-muted">
         Default: <span className="font-mono font-semibold gold-glow">admin</span> / <span className="font-mono font-semibold gold-glow">admin@123</span>
@@ -153,6 +172,20 @@ export default function LoginPage({ onLogin }) {
   const [mode, setMode] = useState('login');
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [tapCount, setTapCount] = useState(0);
+  const [loginMessage, setLoginMessage] = useState('');
+
+  const guestLoginMutation = useGuestLogin({
+    onSuccess: () => {
+      toast.success('Welcome! Continuing as guest.');
+      onLogin();
+    },
+    onError: (err) => toast.error(mapAuthError(err)),
+  });
+
+  function handleModeChange(nextMode) {
+    if (nextMode !== 'login') setLoginMessage('');
+    setMode(nextMode);
+  }
 
   function handleLogoTap() {
     const next = tapCount + 1;
@@ -198,7 +231,7 @@ export default function LoginPage({ onLogin }) {
         <div className="corner-card rounded-3xl overflow-hidden bg-card" style={{ border: '1px solid var(--border-subtle)' }}>
           <div className="flex bg-elevated" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
             {tabs.map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => setMode(id)}
+              <button key={id} onClick={() => handleModeChange(id)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-3.5 text-xs font-semibold transition-all"
                 style={{
                   background: mode === id ? 'linear-gradient(135deg, #C88F2D, #E4B24B)' : 'transparent',
@@ -214,17 +247,29 @@ export default function LoginPage({ onLogin }) {
               <motion.div key={mode}
                 initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }}>
-                {mode === 'signup' && <SignUpForm onDone={onLogin} onSwitch={setMode} />}
-                {mode === 'login'  && <UserLoginForm onDone={onLogin} onSwitch={setMode} />}
+                {mode === 'signup' && (
+                  <SignUpForm
+                    onSwitch={handleModeChange}
+                    onSignupSuccess={setLoginMessage}
+                  />
+                )}
+                {mode === 'login' && (
+                  <UserLoginForm
+                    onDone={onLogin}
+                    onSwitch={handleModeChange}
+                    successMessage={loginMessage}
+                  />
+                )}
                 {mode === 'admin'  && <AdminLoginForm onDone={onLogin} />}
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
 
-        <button onClick={() => { continueAsGuest(); onLogin('user'); }}
-          className="w-full flex items-center justify-center gap-2 mt-4 py-3.5 rounded-2xl text-sm font-semibold btn-ghost active:scale-95">
-          <ArrowRight size={15} /> Continue without Login
+        <button onClick={() => guestLoginMutation.mutate()} disabled={guestLoginMutation.isPending}
+          className="w-full flex items-center justify-center gap-2 mt-4 py-3.5 rounded-2xl text-sm font-semibold btn-ghost active:scale-95 disabled:opacity-60">
+          {guestLoginMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
+          {guestLoginMutation.isPending ? 'Please wait...' : 'Continue without Login'}
         </button>
       </motion.div>
     </div>
