@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, Tag } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Tag, Images, ShieldCheck } from 'lucide-react';
 
 export const GOLD_SOLID = '#C88F2D';
 export const GOLD_TEXT = '#E4B24B';
@@ -16,8 +16,12 @@ export const COLOR_OPTIONS = [
   { value: 'from-pink-600 to-fuchsia-800', label: 'Pink' },
 ];
 
+export const CHITRALU_CATEGORY = 'chitralu';
+
 export const ADMIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'verifications', label: 'ధృవీకరణ', icon: ShieldCheck },
   { id: 'scriptures', label: 'Scriptures', icon: BookOpen },
-  { id: 'categories', label: 'Subcategories', icon: Tag },
+  { id: 'gallery', label: 'Gallery', icon: Images },
+  { id: 'categories', label: 'Categories', icon: Tag },
 ];

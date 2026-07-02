@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, Bell, LogOut } from 'lucide-react';
+import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, LogOut, Info, Phone } from 'lucide-react';
 import SettingsDrawer from './SettingsDrawer';
-
+import GuestNavLink from './GuestNavLink';
+import { WhatsAppIcon, InstagramIcon } from './SocialLinkIcons';
+import { SOCIAL_LINKS, WHATSAPP_URL, INSTAGRAM_URL } from '../constants/socialLinks';
+import SoundToggle from './SoundToggle';
+import logo from '../assets/images/logo.png';
+import vaikhanasaGuru from '../assets/images/vaikhanasaGuru.png';
 
 const LOGO = '/vaikhanasa.png';
 
@@ -15,8 +20,55 @@ const NAV_LINKS = [
   { to: '/profile', icon: User, label: 'ప్రొఫైల్', en: 'Profile' },
 ];
 
+const DRAWER_EXTRA_LINKS = [
+  { to: '/about', icon: Info, label: 'గురించి', en: 'About' },
+  { to: '/contact', icon: Phone, label: 'సంప్రదింపు', en: 'Contact' },
+];
+
 const GOLD = '#E4B24B';
 const GOLD_MID = '#C88F2D';
+
+const SOCIAL_ICON_MAP = {
+  whatsapp: WhatsAppIcon,
+  instagram: InstagramIcon,
+};
+
+function SocialSidebarLinks({ onNavigate, compact = false }) {
+  return (
+    <div className={compact ? 'flex items-center gap-1' : 'px-4 py-3'}>
+      {!compact && (
+        <p className="text-[10px] uppercase tracking-widest text-muted mb-2 px-1 font-telugu" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+          మమ్మల్ని సంప్రదించండి
+        </p>
+      )}
+      <div className={`flex ${compact ? 'items-center gap-1' : 'flex-col gap-2'}`}>
+        {SOCIAL_LINKS.map(({ id, href, label, display }) => {
+          const Icon = SOCIAL_ICON_MAP[id];
+          return (
+            <a
+              key={id}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onNavigate}
+              className={compact ? 'sidebar-social-btn sidebar-social-btn--compact' : 'sidebar-social-btn'}
+              aria-label={label}
+              title={display}
+            >
+              <Icon size={compact ? 18 : 20} />
+              {!compact && (
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-body">{label}</span>
+                  <span className="block text-xs text-muted truncate">{display}</span>
+                </span>
+              )}
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function Layout({ children, onLogout }) {
   const location = useLocation();
@@ -59,8 +111,8 @@ export default function Layout({ children, onLogout }) {
 
         {/* Center nav links */}
         <nav className="flex items-center gap-1">
-          {NAV_LINKS.map(({ to, label, en }) => (
-            <Link
+          {NAV_LINKS.map(({ to, label }) => (
+            <GuestNavLink
               key={to}
               to={to}
               className="px-4 py-2 rounded-lg text-sm transition-all duration-200 font-telugu"
@@ -71,24 +123,59 @@ export default function Layout({ children, onLogout }) {
               }}
             >
               {label}
-            </Link>
+            </GuestNavLink>
+          ))}
+          {DRAWER_EXTRA_LINKS.map(({ to, label }) => (
+            <GuestNavLink
+              key={to}
+              to={to}
+              className="px-3 py-2 rounded-lg text-sm transition-all duration-200 font-telugu opacity-80"
+              style={{
+                color: isActive(to) ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontFamily: 'Tiro Telugu, serif',
+                background: isActive(to) ? 'var(--hover-bg)' : 'transparent',
+              }}
+            >
+              {label}
+            </GuestNavLink>
           ))}
         </nav>
 
         {/* Right icons */}
         <div className="flex items-center gap-1">
-          <Link to="/search" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
+          <GuestNavLink to="/search" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
             <Search size={18} />
-          </Link>
-          <button className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
-            <Bell size={18} />
-          </button>
+          </GuestNavLink>
+          <SoundToggle
+            className="p-2.5 rounded-lg transition-colors hover:bg-white/5"
+            iconSize={18}
+          />
           <button onClick={() => setSettingsOpen(true)} className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
             <Settings size={18} />
           </button>
-          <Link to="/profile" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
+          <GuestNavLink to="/profile" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
             <User size={18} />
-          </Link>
+          </GuestNavLink>
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-social-btn sidebar-social-btn--compact p-2.5"
+            aria-label="WhatsApp Chat"
+            title="Chat on WhatsApp: 79810 91684"
+          >
+            <WhatsAppIcon size={18} />
+          </a>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-social-btn sidebar-social-btn--compact p-2.5"
+            aria-label="Instagram"
+            title="@ssri_vaikhanasam_app"
+          >
+            <InstagramIcon size={18} />
+          </a>
           {onLogout && (
             <button onClick={onLogout} className="p-2.5 rounded-lg transition-colors hover:bg-white/5 ml-1" style={{ color: '#C88F2D88' }}>
               <LogOut size={18} />
@@ -111,9 +198,10 @@ export default function Layout({ children, onLogout }) {
             వైఖానస నిధి
           </span>
         </Link>
-        <button onClick={() => setSettingsOpen(true)} className="p-2" style={{ color: GOLD }}>
-          <Settings size={20} />
-        </button>
+        <SoundToggle
+          className="p-2 rounded-lg transition-colors hover:bg-white/5"
+          iconSize={19}
+        />
       </header>
 
       {/* Mobile Nav Drawer */}
@@ -129,43 +217,70 @@ export default function Layout({ children, onLogout }) {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="nav-drawer z-50 lg:hidden"
             >
-              <div className="flex-shrink-0 flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid var(--border-medium)', boxShadow: '0 0 12px rgba(200,143,45,0.2)' }}>
-                    <img src={LOGO} alt="Vaikhanasa Nidhi" className="w-9 h-9 object-contain" />
-                  </div>
-                  <div>
-                    <div className="font-telugu font-bold gold-glow" style={{ fontFamily: 'Tiro Telugu, serif' }}>వైఖానస నిధి</div>
-                    <div className="text-xs" style={{ color: '#C88F2D66' }}>Sacred Library</div>
-                  </div>
+              <div className="flex-shrink-0 text-center sidebar-drawer-head" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <div className="flex items-center justify-end mb-2">
+                  <button onClick={() => setDrawerOpen(false)} style={{ color: GOLD }} aria-label="Close menu">
+                    <X size={20} />
+                  </button>
                 </div>
-                <button onClick={() => setDrawerOpen(false)} style={{ color: GOLD }}><X size={20} /></button>
+                <Link to="/about" onClick={() => setDrawerOpen(false)} className="sidebar-guru-wrap inline-flex">
+                  <img
+                    src={vaikhanasaGuru}
+                    alt="Vaikhanasa Guru"
+                    className="sidebar-guru-img"
+                  />
+                </Link>
+                <h2 className="font-telugu font-bold text-xl gold-glow-strong mt-4 sidebar-drawer-title" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                  వైఖానస నిధి
+                </h2>
+              
               </div>
               <div className="panel-scroll scrollbar-hide">
                 <nav className="px-4 py-4 flex flex-col gap-1">
                   {NAV_LINKS.map(({ to, icon: Icon, label }) => (
-                    <Link
+                    <GuestNavLink
                       key={to}
                       to={to}
                       onClick={() => setDrawerOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-telugu text-sm transition-all"
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-telugu text-sm transition-all w-full text-left"
                       style={{
                         background: isActive(to) ? '#C88F2D18' : 'transparent',
-                        color: isActive(to) ? GOLD : '#C88F2D99',
+                        color: isActive(to) ? GOLD : 'var(--text-primary)',
                         fontFamily: 'Tiro Telugu, serif',
-                        textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : 'none',
+                        textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : '0 0 10px rgba(228,178,75,0.08)',
                       }}
                     >
                       <Icon size={18} />
                       {label}
-                    </Link>
+                    </GuestNavLink>
+                  ))}
+                  <div className="my-2 h-px" style={{ background: 'var(--border-subtle)' }} />
+                  {DRAWER_EXTRA_LINKS.map(({ to, icon: Icon, label }) => (
+                    <GuestNavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-telugu text-sm transition-all w-full text-left"
+                      style={{
+                        background: isActive(to) ? '#C88F2D18' : 'transparent',
+                        color: isActive(to) ? GOLD : 'var(--text-primary)',
+                        fontFamily: 'Tiro Telugu, serif',
+                        textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : '0 0 10px rgba(228,178,75,0.08)',
+                      }}
+                    >
+                      <Icon size={18} />
+                      {label}
+                    </GuestNavLink>
                   ))}
                 </nav>
+                <div className="border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <SocialSidebarLinks onNavigate={() => setDrawerOpen(false)} />
+                </div>
                 <div className="px-4 pb-6 space-y-1">
                   <button
                     onClick={() => { setDrawerOpen(false); setSettingsOpen(true); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl w-full font-telugu text-sm hover:bg-white/5 transition-all"
-                    style={{ color: '#C88F2D99', fontFamily: 'Tiro Telugu, serif' }}
+                    style={{ color: 'var(--text-primary)', fontFamily: 'Tiro Telugu, serif' }}
                   >
                     <Settings size={18} /> సెట్టింగ్స్
                   </button>
@@ -173,7 +288,7 @@ export default function Layout({ children, onLogout }) {
                     <button
                       onClick={() => { setDrawerOpen(false); onLogout(); }}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl w-full font-telugu text-sm hover:bg-white/5 transition-all"
-                      style={{ color: '#C88F2D66', fontFamily: 'Tiro Telugu, serif' }}
+                      style={{ color: 'var(--text-primary)', fontFamily: 'Tiro Telugu, serif' }}
                     >
                       <LogOut size={18} /> లాగ్అవుట్
                     </button>
@@ -199,7 +314,7 @@ export default function Layout({ children, onLogout }) {
         {NAV_LINKS.map(({ to, icon: Icon, label }) => {
           const active = isActive(to);
           return (
-            <Link key={to} to={to} className="flex-1 flex flex-col items-center py-2 gap-0.5 relative">
+            <GuestNavLink key={to} to={to} className="flex-1 flex flex-col items-center py-2 gap-0.5 relative">
               {active && (
                 <motion.div
                   layoutId="bottom-pill"
@@ -214,7 +329,7 @@ export default function Layout({ children, onLogout }) {
               >
                 {label}
               </span>
-            </Link>
+            </GuestNavLink>
           );
         })}
       </nav>

@@ -3,6 +3,7 @@ import { useCustomQuery, useCustomMutation } from './useCustomApi';
 import * as categoryApi from '../api/categoryApi';
 import { isAdmin, isLoggedIn } from '../store/authStore';
 import { ADMIN_QUERY_KEYS, invalidateAdminQueries } from './adminQueryKeys';
+import { PUBLIC_CATEGORIES_KEY } from './usePublicCategories';
 
 export const CATEGORIES_QUERY_KEY = ADMIN_QUERY_KEYS.categories;
 
@@ -23,6 +24,7 @@ export function useSaveCategory(options = {}) {
     mutationFn: categoryApi.saveCategoryItem,
     onSuccess: (...args) => {
       invalidateAdminQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: PUBLIC_CATEGORIES_KEY });
       onSuccess?.(...args);
     },
     onError,
@@ -38,6 +40,7 @@ export function useDeleteCategory(options = {}) {
     mutationFn: categoryApi.deleteCategory,
     onSuccess: (...args) => {
       invalidateAdminQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: PUBLIC_CATEGORIES_KEY });
       onSuccess?.(...args);
     },
     onError,
@@ -73,6 +76,7 @@ export function useSaveSubcategory(options = {}) {
     mutationFn: categoryApi.saveSubcategoryItem,
     onSuccess: (...args) => {
       invalidateAdminQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: PUBLIC_CATEGORIES_KEY });
       onSuccess?.(...args);
     },
     onError,
@@ -88,6 +92,7 @@ export function useDeleteSubcategory(options = {}) {
     mutationFn: categoryApi.deleteSubcategory,
     onSuccess: (...args) => {
       invalidateAdminQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: PUBLIC_CATEGORIES_KEY });
       onSuccess?.(...args);
     },
     onError,

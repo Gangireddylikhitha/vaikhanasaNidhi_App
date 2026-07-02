@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { X, Save, Loader2, ImagePlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GOLD_TEXT } from '../../constants/adminConstants';
-import { MAIN_CATEGORIES } from '../../data/categories';
 import SubcategoryCombobox from './SubcategoryCombobox';
 import { uploadScriptureImages } from '../../api/uploadApi';
 import { mapAdminError } from '../../lib/apiError';
@@ -17,16 +16,22 @@ function isImageGalleryCategory(parentKey) {
 export default function AdminScriptureForm({
   scripture,
   subcategories = [],
+  mainCategories = [],
   onSave,
   onClose,
   onCreateSubcategory,
   isSaving = false,
   isCreatingSubcategory = false,
+  lockParentCategory = null,
+  galleryMode = false,
 }) {
   const isEdit = !!scripture?.id;
-  const defaultParent = scripture?.parent_category || MAIN_CATEGORIES[0]?.key || 'stotra';
+  const defaultParent = lockParentCategory
+    || scripture?.parent_category
+    || mainCategories[0]?.key
+    || mainCategories[0]?.id
+    || 'stotra';
   const fileRef = useRef(null);
-  const [uploading, setUploading] = useState(false);
 
   const initialGallery = isImageGalleryCategory(scripture?.parent_category);
   const [form, setForm] = useState(() => {
@@ -40,9 +45,9 @@ export default function AdminScriptureForm({
     return {
       title_telugu: '',
       title_english: '',
-      parent_category: defaultParent,
+      parent_category: lockParentCategory || defaultParent,
       subcategory: '',
-      category: defaultParent,
+      category: lockParentCategory || defaultParent,
       description: '',
       verse: { telugu: '', meaning: '' },
       images: [],
@@ -50,8 +55,10 @@ export default function AdminScriptureForm({
   });
 
   const [pendingFiles, setPendingFiles] = useState([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
 
   const isGallery = isImageGalleryCategory(form.parent_category);
+  const uploading = uploadingCount > 0;
 
   const filteredSubs = useMemo(
     () => subcategories.filter((s) => s.parent_key === form.parent_category),
@@ -59,7 +66,8 @@ export default function AdminScriptureForm({
   );
 
   const canSave = form.title_telugu.trim() && (isEdit || form.subcategory)
-    && (!isGallery || form.images.length > 0 || pendingFiles.length > 0);
+    && (!isGallery || form.images.length > 0)
+    && !uploading;
 
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -101,6 +109,32 @@ export default function AdminScriptureForm({
     }
   }
 
+  async function uploadPickedFiles(entries) {
+    setUploadingCount((c) => c + entries.length);
+    try {
+      const uploaded = await uploadScriptureImages(entries.map((e) => e.file));
+      const newImages = uploaded.images.map((url, i) => ({
+        url,
+        caption: entries[i]?.caption?.trim() || '',
+      }));
+      setForm((f) => ({ ...f, images: [...(f.images || []), ...newImages] }));
+      setPendingFiles((prev) => {
+        entries.forEach((e) => {
+          if (e.preview) URL.revokeObjectURL(e.preview);
+        });
+        const ids = new Set(entries.map((e) => e.id));
+        return prev.filter((p) => !ids.has(p.id));
+      });
+    } catch (err) {
+      toast.error(mapAdminError(err));
+      setPendingFiles((prev) => prev.map((p) => (
+        entries.some((e) => e.id === p.id) ? { ...p, error: true } : p
+      )));
+    } finally {
+      setUploadingCount((c) => c - entries.length);
+    }
+  }
+
   function handleImagePick(e) {
     const files = [...(e.target.files || [])];
     if (!files.length) return;
@@ -108,15 +142,14 @@ export default function AdminScriptureForm({
       toast.error('Please choose image files only.');
       return;
     }
-    setPendingFiles((prev) => [
-      ...prev,
-      ...files.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
-        caption: '',
-      })),
-    ]);
+    const entries = files.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+      caption: '',
+    }));
+    setPendingFiles((prev) => [...prev, ...entries]);
+    uploadPickedFiles(entries);
     e.target.value = '';
   }
 
@@ -135,10 +168,6 @@ export default function AdminScriptureForm({
     });
   }
 
-  function setPendingCaption(id, caption) {
-    setPendingFiles((prev) => prev.map((p) => (p.id === id ? { ...p, caption } : p)));
-  }
-
   function setExistingCaption(index, caption) {
     setForm((f) => ({
       ...f,
@@ -150,27 +179,10 @@ export default function AdminScriptureForm({
     e.preventDefault();
     if (!canSave) return;
 
-    let images = (form.images || []).map(({ url, caption }) => ({
+    const images = (form.images || []).map(({ url, caption }) => ({
       url,
       caption: caption?.trim() || '',
     }));
-
-    try {
-      if (isGallery && pendingFiles.length) {
-        setUploading(true);
-        const uploaded = await uploadScriptureImages(pendingFiles.map((p) => p.file));
-        const newImages = uploaded.images.map((url, i) => ({
-          url,
-          caption: pendingFiles[i]?.caption?.trim() || '',
-        }));
-        images = [...images, ...newImages];
-      }
-    } catch (err) {
-      toast.error(mapAdminError(err));
-      setUploading(false);
-      return;
-    }
-    setUploading(false);
 
     const payload = {
       title_telugu: form.title_telugu.trim(),
@@ -205,7 +217,9 @@ export default function AdminScriptureForm({
       >
         <div className="flex items-center justify-between px-6 py-4 panel-header-bar flex-shrink-0">
           <h2 className="font-bold text-base gold-glow">
-            {isEdit ? 'Edit Scripture' : 'Add New Scripture'}
+            {galleryMode
+              ? (isEdit ? 'Edit Album' : 'Add Photo Album')
+              : (isEdit ? 'Edit Scripture' : 'Add New Scripture')}
           </h2>
           <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-white/5" style={{ color: GOLD_TEXT }}>
             <X size={18} />
@@ -228,19 +242,21 @@ export default function AdminScriptureForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label">Category *</label>
-                <select
-                  value={form.parent_category}
-                  onChange={(e) => handleParentChange(e.target.value)}
-                  className="form-select"
-                >
-                  {MAIN_CATEGORIES.map((c) => (
-                    <option key={c.key} value={c.key}>{c.en}</option>
-                  ))}
-                </select>
-              </div>
+            <div className={lockParentCategory ? '' : 'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
+              {!lockParentCategory && (
+                <div>
+                  <label className="form-label">Category *</label>
+                  <select
+                    value={form.parent_category}
+                    onChange={(e) => handleParentChange(e.target.value)}
+                    className="form-select"
+                  >
+                    {mainCategories.map((c) => (
+                      <option key={c.key || c.id} value={c.key || c.id}>{c.label_en}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="form-label">Subcategory {!isEdit && '*'}</label>
                 <SubcategoryCombobox
@@ -271,7 +287,7 @@ export default function AdminScriptureForm({
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
                 <p className="text-[11px] text-muted mb-3">
-                  Upload photos for Images (చిత్రాలు). Subcategory thumbnails are set in Categories only.
+                  Images upload as soon as you pick them. Add captions after they appear above.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {form.images.map((img, i) => (
@@ -290,14 +306,20 @@ export default function AdminScriptureForm({
                   {pendingFiles.map((item) => (
                     <div key={item.id} className="rounded-xl overflow-hidden bg-elevated" style={{ border: '1px solid var(--border-subtle)' }}>
                       <div className="relative aspect-square">
-                        <img src={item.preview} alt="" className="w-full h-full object-cover" />
+                        <img src={item.preview} alt="" className={`w-full h-full object-cover ${item.error ? 'opacity-40' : ''}`} />
+                        {!item.error && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <Loader2 size={22} className="animate-spin text-white" />
+                          </div>
+                        )}
                         <button type="button" onClick={() => removePendingImage(item.id)}
                           className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-red-400">
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <input value={item.caption} onChange={(e) => setPendingCaption(item.id, e.target.value)}
-                        placeholder="Caption (optional)" className="w-full px-2 py-1.5 text-xs bg-transparent border-t border-[var(--border-subtle)] outline-none" />
+                      {item.error && (
+                        <p className="px-2 py-1 text-[10px] text-red-400 border-t border-[var(--border-subtle)]">Upload failed — remove and retry</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -334,18 +356,19 @@ export default function AdminScriptureForm({
             )}
           </div>
 
-          <div
-            className="flex-shrink-0 flex gap-3 px-6 py-4 border-t"
-            style={{ borderColor: 'var(--border-subtle)' }}
-          >
+          <div className="modal-actions">
             <button type="button" onClick={onClose} disabled={busy}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold btn-ghost disabled:opacity-50">
-              Cancel
+              className="modal-btn btn-ghost disabled:opacity-50">
+              <span className="modal-btn-label">Cancel</span>
             </button>
             <button type="submit" disabled={busy || !canSave}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold btn-gold disabled:opacity-50">
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              {isEdit ? 'Save Changes' : 'Add Scripture'}
+              className="modal-btn modal-btn-primary btn-gold disabled:opacity-50">
+              {busy ? <Loader2 size={14} className="modal-btn-icon animate-spin" /> : <Save size={14} className="modal-btn-icon" />}
+              <span className="modal-btn-label">
+                {galleryMode
+                  ? (isEdit ? 'Save Album' : 'Add Album')
+                  : (isEdit ? 'Save Changes' : 'Add Scripture')}
+              </span>
             </button>
           </div>
         </form>

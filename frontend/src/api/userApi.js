@@ -5,8 +5,10 @@ import {
   userBookmarks,
   userBookmarkById,
   userProgress,
+  userProgressById,
   userSettings,
   userProfile,
+  userPassword,
 } from '../lib/apiUrls';
 
 export async function fetchUserData() {
@@ -67,5 +69,20 @@ export async function updateSettingsApi(settings) {
 
 export async function updateProfileApi(payload) {
   const { data } = await axiosInstance.patch(userProfile, payload);
+  return data;
+}
+
+export async function changePasswordApi(payload) {
+  const { data } = await axiosInstance.patch(userPassword, payload);
+  return data;
+}
+
+export async function deleteAccountApi(password) {
+  const { data } = await axiosInstance.delete(userProfile, { data: { password } });
+  return data;
+}
+
+export async function removeProgressApi(scriptureId) {
+  const { data } = await axiosInstance.delete(userProgressById(scriptureId));
   return data;
 }

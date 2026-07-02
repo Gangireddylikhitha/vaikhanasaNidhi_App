@@ -1,5 +1,7 @@
 import { LayoutDashboard, LogOut } from 'lucide-react';
 import { ADMIN_TABS, GOLD_TEXT } from '../../constants/adminConstants';
+import ThemeToggle from '../ThemeToggle';
+import SoundToggle from '../SoundToggle';
 
 export default function AdminHeader({ tab, onOpenSidebar, onLogout }) {
   const activeTab = ADMIN_TABS.find((t) => t.id === tab);
@@ -16,6 +18,11 @@ export default function AdminHeader({ tab, onOpenSidebar, onLogout }) {
         <p className="text-xs text-muted hidden sm:block">Manage your sacred content</p>
       </div>
       <div className="ml-auto flex items-center gap-3">
+        <SoundToggle
+          className="p-2 rounded-xl hover:bg-white/5 transition-colors"
+          iconSize={18}
+        />
+        <ThemeToggle />
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold"
           style={{ background: '#C88F2D18', color: GOLD_TEXT, border: '1px solid #C88F2D33' }}>
           <span className="w-2 h-2 rounded-full bg-green-400" />

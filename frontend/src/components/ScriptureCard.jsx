@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
 import { Bookmark, BookOpen } from "lucide-react";
-import { getCategoryInfo } from "../data/scriptures";
+import { getCategoryInfo } from "../utils/categoryLookup";
+import { usePublicCategories } from "../hooks/usePublicCategories";
 import { useBookmarks, useBookmarkActions } from "../hooks/useUserData";
 import { useState, useEffect } from "react";
 
 const GOLD = "#E4B24B";
 
 export default function ScriptureCard({ scripture, onBookmarkChange }) {
-  const cat = getCategoryInfo(scripture.category);
+  const { data: mainCategories = [] } = usePublicCategories();
+  const cat = getCategoryInfo(scripture.category, mainCategories);
   const { data: bookmarks = [] } = useBookmarks();
   const { addMutation, removeMutation, isBookmarked } = useBookmarkActions();
   const [bookmarked, setBookmarked] = useState(false);

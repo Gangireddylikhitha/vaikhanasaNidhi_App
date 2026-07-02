@@ -47,14 +47,25 @@ exports.removeBookmark = catchAsync(async (req, res) => {
   res.json(user.bookmarks);
 });
 
+function isImageProgressCategory(category) {
+  return category === 'chitralu';
+}
+
+function filterReadableProgress(items) {
+  return (items || []).filter((p) => !isImageProgressCategory(p.category));
+}
+
 exports.getProgress = catchAsync(async (req, res) => {
   const user = await loadUser(req);
-  res.json(user.reading_progress || []);
+  res.json(filterReadableProgress(user.reading_progress));
 });
 
 exports.saveProgress = catchAsync(async (req, res) => {
   const { scripture_id, title_telugu, category, progress, last_verse } = req.body;
   if (!scripture_id) throw new AppError('scripture_id is required', 400, 'BAD_REQUEST');
+  if (isImageProgressCategory(category)) {
+    throw new AppError('Reading progress is not tracked for image galleries', 400, 'BAD_REQUEST');
+  }
 
   const user = await loadUser(req);
   const entry = {
@@ -75,7 +86,50 @@ exports.saveProgress = catchAsync(async (req, res) => {
     .slice(0, 20);
 
   await user.save();
-  res.json(user.reading_progress);
+  res.json(filterReadableProgress(user.reading_progress));
+});
+
+exports.removeProgress = catchAsync(async (req, res) => {
+  const user = await loadUser(req);
+  user.reading_progress = user.reading_progress.filter(
+    (p) => p.scripture_id !== req.params.scriptureId
+  );
+  await user.save();
+  res.json(filterReadableProgress(user.reading_progress));
+});
+
+exports.changePassword = catchAsync(async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password) {
+    throw new AppError('Current and new password are required', 400, 'BAD_REQUEST');
+  }
+  if (new_password.length < 4) {
+    throw new AppError('New password must be at least 4 characters', 400, 'BAD_REQUEST');
+  }
+
+  const user = await User.findById(req.user.id).select('+password');
+  if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
+
+  const valid = await user.comparePassword(current_password);
+  if (!valid) throw new AppError('Current password is incorrect', 401, 'WRONG_PASSWORD');
+
+  user.password = new_password;
+  await user.save();
+  res.json({ ok: true });
+});
+
+exports.deleteAccount = catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id).select('+password');
+  if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
+
+  const { password } = req.body;
+  if (!password) throw new AppError('Password is required to delete account', 400, 'BAD_REQUEST');
+
+  const valid = await user.comparePassword(password);
+  if (!valid) throw new AppError('Wrong password', 401, 'WRONG_PASSWORD');
+
+  await user.deleteOne();
+  res.json({ ok: true });
 });
 
 exports.getSettings = catchAsync(async (req, res) => {
@@ -112,9 +166,38 @@ exports.getUserData = catchAsync(async (req, res) => {
   const user = await loadUser(req);
   res.json({
     bookmarks: user.bookmarks || [],
-    reading_progress: user.reading_progress || [],
+    reading_progress: filterReadableProgress(user.reading_progress),
     settings: { ...DEFAULT_SETTINGS, ...(user.settings?.toObject?.() || user.settings || {}) },
   });
+});
+
+exports.registerFcmToken = catchAsync(async (req, res) => {
+  const { token, platform = 'android' } = req.body;
+  if (!token?.trim()) throw new AppError('FCM token is required', 400, 'BAD_REQUEST');
+  if (platform !== 'android') {
+    throw new AppError('Only Android FCM tokens are supported', 400, 'BAD_REQUEST');
+  }
+
+  const user = await loadUser(req);
+  const trimmed = token.trim();
+  const existing = (user.fcm_tokens || []).filter((t) => t.token !== trimmed);
+  user.fcm_tokens = [{
+    token: trimmed,
+    platform: 'android',
+    updated_at: new Date(),
+  }, ...existing].slice(0, 5);
+  await user.save();
+  res.json({ ok: true });
+});
+
+exports.removeFcmToken = catchAsync(async (req, res) => {
+  const { token } = req.body;
+  if (!token?.trim()) throw new AppError('FCM token is required', 400, 'BAD_REQUEST');
+
+  const user = await loadUser(req);
+  user.fcm_tokens = (user.fcm_tokens || []).filter((t) => t.token !== token.trim());
+  await user.save();
+  res.json({ ok: true });
 });
 
 exports.syncLocalData = catchAsync(async (req, res) => {
@@ -139,7 +222,7 @@ exports.syncLocalData = catchAsync(async (req, res) => {
 
   if (Array.isArray(reading_progress)) {
     reading_progress.forEach((p) => {
-      if (!p?.scripture_id) return;
+      if (!p?.scripture_id || isImageProgressCategory(p.category)) return;
       const entry = {
         scripture_id: p.scripture_id,
         title_telugu: p.title_telugu || '',
@@ -174,7 +257,7 @@ exports.syncLocalData = catchAsync(async (req, res) => {
 
   res.json({
     bookmarks: user.bookmarks || [],
-    reading_progress: user.reading_progress || [],
+    reading_progress: filterReadableProgress(user.reading_progress),
     settings: { ...DEFAULT_SETTINGS, ...(user.settings?.toObject?.() || user.settings || {}) },
   });
 });

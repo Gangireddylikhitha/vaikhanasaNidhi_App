@@ -41,6 +41,15 @@ export async function logoutUser() {
   return data;
 }
 
+export async function changePassword({ username, current_password, new_password }) {
+  const { data } = await axiosInstance.post(urls.changePassword, {
+    username,
+    current_password,
+    new_password,
+  });
+  return data;
+}
+
 export async function checkHealth() {
   const { data } = await axiosInstance.get(urls.health);
   return data;

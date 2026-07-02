@@ -26,9 +26,11 @@ export function setAuthSession({ token, user }) {
     role: user.role,
     name: user.name,
     username: user.username ?? null,
+    verification_status: user.verification_status || 'none',
     loggedIn: true,
   };
   save(session);
+  notifyVerificationChange(session.verification_status);
   return session;
 }
 
@@ -56,4 +58,25 @@ export function isGuest() {
 export function isRegisteredUser() {
   const auth = load();
   return auth.loggedIn === true && !!auth.token && auth.role !== 'guest';
+}
+
+export function isVerifiedUser() {
+  const auth = load();
+  return isRegisteredUser() && auth.verification_status === 'approved';
+}
+
+export function getVerificationStatus() {
+  return load().verification_status || 'none';
+}
+
+export function updateVerificationStatus(status) {
+  const auth = load();
+  if (!auth.loggedIn) return;
+  save({ ...auth, verification_status: status });
+  notifyVerificationChange(status);
+}
+
+function notifyVerificationChange(status) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('auth:verification', { detail: { status } }));
 }

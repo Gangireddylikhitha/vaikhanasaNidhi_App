@@ -3,24 +3,30 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BookOpen, Bookmark, CheckCircle, User, Star, Pencil, Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getCategoryInfo } from "../data/scriptures";
+import { getCategoryInfo } from "../utils/categoryLookup";
+import { usePublicCategories } from "../hooks/usePublicCategories";
 import { isImageProgressItem } from "../utils/scriptureSubcategoryMatch";
 import { useMe } from "../hooks/useAuth";
-import { useReadingProgress, useBookmarks, useProfileUpdate } from "../hooks/useUserData";
+import { useReadingProgress, useBookmarks, useProfileUpdate, useDeleteAccount } from "../hooks/useUserData";
 import { getAuth, isRegisteredUser } from "../store/authStore";
+import { useNavigate } from "react-router-dom";
 
 const GOLD = "#E4B24B";
 const GOLD_SOLID = "#C88F2D";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const auth = getAuth();
   const registered = isRegisteredUser();
   const { data: me, refetch: refetchMe } = useMe({ enabled: registered });
   const { data: progress = [] } = useReadingProgress();
   const { data: bookmarks = [] } = useBookmarks();
+  const { data: mainCategories = [] } = usePublicCategories();
   const profileMutation = useProfileUpdate();
+  const deleteMutation = useDeleteAccount();
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   const readingProgress = progress.filter((p) => !isImageProgressItem(p));
 
@@ -47,6 +53,17 @@ export default function Profile() {
         refetchMe();
       },
       onError: () => toast.error("Could not update profile."),
+    });
+  }
+
+  function handleDeleteAccount() {
+    if (!deletePassword) return toast.error("Enter your password to confirm.");
+    deleteMutation.mutate(deletePassword, {
+      onSuccess: () => {
+        toast.success("Account deleted");
+        navigate("/login", { replace: true });
+      },
+      onError: () => toast.error("Could not delete account."),
     });
   }
 
@@ -136,7 +153,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <section className="mt-6 pb-28">
+        <section className={`mt-6 ${registered ? '' : 'pb-28'}`}>
           <h2 className="font-bold text-base mb-3 gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
             Recent Reading
           </h2>
@@ -159,7 +176,7 @@ export default function Profile() {
           ) : (
             <div className="space-y-3">
               {readingProgress.map((item, i) => {
-                const cat = getCategoryInfo(item.category);
+                const cat = getCategoryInfo(item.category, mainCategories);
                 const done = item.progress >= 95;
                 return (
                   <motion.div key={item.scripture_id}
@@ -203,6 +220,23 @@ export default function Profile() {
             </div>
           )}
         </section>
+
+        {registered && (
+          <section className="mt-8 pb-28">
+            <h2 className="font-bold text-base mb-3 gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
+              Account
+            </h2>
+            <div className="corner-card rounded-2xl p-4">
+              <p className="text-xs text-muted mb-2">Delete your account permanently</p>
+              <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Password to confirm" className="form-input w-full mb-2" />
+              <button type="button" onClick={handleDeleteAccount} disabled={deleteMutation.isPending}
+                className="text-sm text-red-400 hover:text-red-300">
+                Delete account
+              </button>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

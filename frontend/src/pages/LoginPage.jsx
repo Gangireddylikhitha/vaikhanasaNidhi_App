@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Shield, Eye, EyeOff, LogIn, UserPlus, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Shield, Eye, EyeOff, LogIn, UserPlus, ArrowRight, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSignup, useLogin, useAdminLogin, useGuestLogin } from '../hooks/useAuth';
+import { useSignup, useLogin, useAdminLogin, useGuestLogin, useChangePasswordLogin } from '../hooks/useAuth';
 import { mapAuthError } from '../lib/apiError';
+import ThemeToggle from '../components/ThemeToggle';
 import logo from '../assets/images/logo.png';
 
 function PasswordInput({ value, onChange, placeholder, required }) {
@@ -34,7 +35,7 @@ function Field({ label, children }) {
   );
 }
 
-function SignUpForm({ onSwitch, onSignupSuccess }) {
+function SignUpForm({ onSwitch, onDone }) {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [pass, setPass] = useState('');
@@ -42,9 +43,8 @@ function SignUpForm({ onSwitch, onSignupSuccess }) {
 
   const signupMutation = useSignup({
     onSuccess: () => {
-      toast.success('Account created! Please login with your username and password.');
-      onSignupSuccess?.('Account created! Please login with your username and password.');
-      onSwitch('login');
+      toast.success('ఖాతా సృష్టించబడింది! ధృవీకరణ ఫారమ్ పూరించండి.');
+      onDone?.();
     },
     onError: (err) => toast.error(mapAuthError(err)),
   });
@@ -88,7 +88,67 @@ function SignUpForm({ onSwitch, onSignupSuccess }) {
   );
 }
 
+function ChangePasswordForm({ onBack }) {
+  const [username, setUsername] = useState('');
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+
+  const changePasswordMutation = useChangePasswordLogin({
+    onSuccess: () => {
+      toast.success('Password changed! Please login with your new password.');
+      onBack();
+    },
+    onError: (err) => toast.error(mapAuthError(err)),
+  });
+
+  function handle(e) {
+    e.preventDefault();
+    if (!username.trim()) return toast.error('Username is required.');
+    if (newPass.length < 4) return toast.error('New password must be at least 4 characters.');
+    if (newPass !== confirmPass) return toast.error('New passwords do not match.');
+    changePasswordMutation.mutate({
+      username: username.trim(),
+      current_password: oldPass,
+      new_password: newPass,
+    });
+  }
+
+  return (
+    <form onSubmit={handle} className="space-y-4">
+      <div className="flex items-center gap-2 mb-1">
+        <KeyRound size={16} className="text-primary-gold" />
+        <h3 className="font-semibold text-sm gold-glow">Change Password</h3>
+      </div>
+      <Field label="Username *">
+        <input value={username} onChange={(e) => setUsername(e.target.value)}
+          placeholder="your_username" required className="form-input" />
+      </Field>
+      <Field label="Old Password *">
+        <PasswordInput value={oldPass} onChange={(e) => setOldPass(e.target.value)} required />
+      </Field>
+      <Field label="New Password *">
+        <PasswordInput value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Min. 4 characters" required />
+      </Field>
+      <Field label="Confirm New Password *">
+        <PasswordInput value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} placeholder="Repeat new password" required />
+      </Field>
+      <button type="submit" disabled={changePasswordMutation.isPending}
+        className="w-full flex items-center justify-center gap-2 py-3.5 btn-gold text-sm disabled:opacity-60">
+        {changePasswordMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+        {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
+      </button>
+      <p className="text-center text-xs text-muted">
+        <button type="button" onClick={onBack} className="font-semibold underline gold-glow">
+          Back to Login
+        </button>
+      </p>
+    </form>
+  );
+}
+
 function UserLoginForm({ onDone, onSwitch, successMessage }) {
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [username, setUsername] = useState('');
   const [pass, setPass] = useState('');
 
@@ -103,6 +163,10 @@ function UserLoginForm({ onDone, onSwitch, successMessage }) {
   function handle(e) {
     e.preventDefault();
     loginMutation.mutate({ username: username.trim(), password: pass });
+  }
+
+  if (showChangePassword) {
+    return <ChangePasswordForm onBack={() => setShowChangePassword(false)} />;
   }
 
   return (
@@ -120,6 +184,11 @@ function UserLoginForm({ onDone, onSwitch, successMessage }) {
         {loginMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
         {loginMutation.isPending ? 'Logging in...' : 'Login'}
       </button>
+      <p className="text-center text-xs text-muted">
+        <button type="button" onClick={() => setShowChangePassword(true)} className="font-semibold underline gold-glow">
+          Change password
+        </button>
+      </p>
       <p className="text-center text-xs text-muted">
         New here?{' '}
         <button type="button" onClick={() => onSwitch('signup')} className="font-semibold underline gold-glow">
@@ -200,8 +269,12 @@ export default function LoginPage({ onLogin }) {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 page-bg"
+    <div className="min-h-screen flex items-center justify-center p-4 page-bg relative"
       style={{ backgroundImage: 'var(--hero-glow)' }}>
+
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
 
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
 
@@ -250,7 +323,7 @@ export default function LoginPage({ onLogin }) {
                 {mode === 'signup' && (
                   <SignUpForm
                     onSwitch={handleModeChange}
-                    onSignupSuccess={setLoginMessage}
+                    onDone={onLogin}
                   />
                 )}
                 {mode === 'login' && (

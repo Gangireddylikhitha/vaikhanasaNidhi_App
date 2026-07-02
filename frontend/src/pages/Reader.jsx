@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Bookmark, Share2, ZoomIn, ZoomOut, Copy, Check, BookOpen } from "lucide-react";
-import { getCategoryInfo } from "../data/scriptures";
+import { getCategoryInfo } from "../utils/categoryLookup";
+import { usePublicCategories } from "../hooks/usePublicCategories";
 import { isImageGalleryScripture } from "../utils/scriptureSubcategoryMatch";
 import { usePublicScripture, usePublicScriptures } from "../hooks/usePublicScriptures";
 import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
@@ -16,6 +17,7 @@ export default function Reader() {
   const navigate = useNavigate();
   const { data: scripture, isLoading, isError, refetch } = usePublicScripture(id);
   const { data: allScriptures = [] } = usePublicScriptures();
+  const { data: mainCategories = [] } = usePublicCategories();
   const { data: bookmarks = [] } = useBookmarks();
   const { addMutation, removeMutation, isBookmarked: checkBookmarked } = useBookmarkActions();
   const progressMutation = useProgressActions();
@@ -123,7 +125,7 @@ export default function Reader() {
     );
   }
 
-  const cat = getCategoryInfo(scripture.category);
+  const cat = getCategoryInfo(scripture.category, mainCategories);
   const isGallery = isImageGalleryScripture(scripture);
   const itemCount = isGallery ? (scripture.images?.length || 0) : (scripture.verses?.length || 0);
 
@@ -311,7 +313,7 @@ export default function Reader() {
                 Related Scriptures
               </h3>
               {related.map(s => {
-                const rc = getCategoryInfo(s.category);
+                const rc = getCategoryInfo(s.category, mainCategories);
                 return (
                   <a key={s.id} href={"/read/" + s.id}
                     className="corner-card rounded-2xl overflow-hidden hover:brightness-110 transition-all flex">

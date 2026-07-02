@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Bell, BookOpen, ChevronRight, ArrowRight } from 'lucide-react';
 import { markOnboardingDone } from '../store/useAppStore';
+import ThemeToggle from '../components/ThemeToggle';
 import logo from '../assets/images/logo.png';
 
 const GOLD_GRADIENT = 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)';
@@ -57,9 +58,12 @@ export default function Onboarding({ onDone }) {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center page-bg"
+      className="fixed inset-0 z-40 flex items-center justify-center page-bg relative"
       style={{ backgroundImage: 'var(--hero-glow)' }}
     >
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm mx-auto h-full flex flex-col px-5 py-6">
 
         <div className="flex items-center justify-between mb-6">
@@ -125,7 +129,7 @@ export default function Onboarding({ onDone }) {
               key={i}
               animate={{
                 width: i === step ? 28 : 10,
-                background: i === step ? '#C88F2D' : '#333',
+                background: i === step ? '#C88F2D' : 'var(--border-medium)',
                 boxShadow: i === step ? '0 0 8px rgba(200,143,45,0.5)' : 'none',
               }}
               transition={{ duration: 0.3 }}

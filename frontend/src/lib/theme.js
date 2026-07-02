@@ -17,6 +17,9 @@ const MODE_VARS = {
     '--hero-glow': 'radial-gradient(circle at 70% 50%, rgba(200,143,45,0.14) 0%, transparent 60%)',
     '--drawer-bg': '#111111',
     '--hover-bg': 'rgba(255, 255, 255, 0.05)',
+    '--vdash-tab-active': '#C88F2D',
+    '--vdash-tab-active-text': '#0a0a0a',
+    '--verify-accent': '#E4B24B',
   },
   light: {
     '--bg-page': '#FAFAF8',
@@ -36,6 +39,9 @@ const MODE_VARS = {
     '--hero-glow': 'radial-gradient(circle at 70% 50%, rgba(200,143,45,0.1) 0%, transparent 60%)',
     '--drawer-bg': '#FFFFFF',
     '--hover-bg': 'rgba(200, 143, 45, 0.08)',
+    '--vdash-tab-active': '#C88F2D',
+    '--vdash-tab-active-text': '#1a1200',
+    '--verify-accent': '#C88F2D',
   },
 };
 

@@ -3,6 +3,8 @@ const { authenticate, requireAdmin } = require('../middleware/authenticate');
 const adminDashboardController = require('../controllers/adminDashboardController');
 const adminScriptureController = require('../controllers/adminScriptureController');
 const adminCategoryController = require('../controllers/adminCategoryController');
+const adminGalleryController = require('../controllers/adminGalleryController');
+const adminVerificationController = require('../controllers/adminVerificationController');
 const uploadController = require('../controllers/uploadController');
 const { imageUpload } = require('../middleware/upload');
 
@@ -11,6 +13,10 @@ const router = express.Router();
 router.use(authenticate, requireAdmin);
 
 router.get('/dashboard', adminDashboardController.getDashboard);
+
+router.get('/verification', adminVerificationController.listApplications);
+router.get('/verification/:id', adminVerificationController.getApplication);
+router.patch('/verification/:id', adminVerificationController.reviewApplication);
 
 router.post(
   '/uploads/subcategory-image',
@@ -23,6 +29,19 @@ router.post(
   imageUpload.array('images', 30),
   uploadController.uploadScriptureImages
 );
+
+router.post(
+  '/uploads/gallery-photos',
+  imageUpload.array('images', 30),
+  uploadController.uploadGalleryPhotos
+);
+
+router.get('/gallery/events', adminGalleryController.listEvents);
+router.post('/gallery/events', adminGalleryController.createEvent);
+router.put('/gallery/events/:slug', adminGalleryController.updateEvent);
+router.delete('/gallery/events/:slug', adminGalleryController.deleteEvent);
+router.post('/gallery/photos', adminGalleryController.createPhotos);
+router.delete('/gallery/photos/:id', adminGalleryController.deletePhoto);
 
 router.get('/scriptures', adminScriptureController.listScriptures);
 router.get('/scriptures/:id', adminScriptureController.getScripture);

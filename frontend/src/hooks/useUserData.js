@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCustomQuery, useCustomMutation } from './useCustomApi';
 import * as userApi from '../api/userApi';
-import { isRegisteredUser, isLoggedIn, setAuthSession, getAuth } from '../store/authStore';
+import { isRegisteredUser, isLoggedIn, setAuthSession, getAuth, clearAuthSession } from '../store/authStore';
 import {
   getBookmarks as getLocalBookmarks,
   addBookmark as addLocalBookmark,
@@ -133,6 +133,21 @@ export function useProfileUpdate() {
         setAuthSession({ token: auth.token, user: { ...auth, name: data.name, role: data.role, username: data.username } });
       }
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useCustomMutation({ mutationFn: userApi.changePasswordApi });
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useCustomMutation({
+    mutationFn: userApi.deleteAccountApi,
+    onSuccess: () => {
+      clearAuthSession();
+      queryClient.clear();
     },
   });
 }

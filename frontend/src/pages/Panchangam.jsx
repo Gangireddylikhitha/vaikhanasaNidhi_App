@@ -1,111 +1,193 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Moon, Clock, Star, Sunrise, Sunset, Sparkles } from "lucide-react";
-import { usePanchangam } from "../hooks/usePanchangam";
-import { getPanchangamForDate } from "../lib/panchangam";
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { usePanchangam } from '../hooks/usePanchangam';
+import { toIstDateKey } from '../lib/panchangamSource';
+import PanchangamDatePicker from '../components/panchangam/PanchangamDatePicker';
+import {
+  NithraPage,
+  NithraHeaderCard,
+  NithraDateSelector,
+  NithraBanner,
+  NithraSunMoonGrid,
+  NithraPanchangGrid,
+  NithraSection,
+  NithraDualSection,
+  NithraPhase4Grid,
+  NithraTodayChip,
+} from '../components/panchangam/NithraLayout';
 
-const GOLD = "#E4B24B";
-const GOLD_SOLID = "#C88F2D";
+function buildShareText(p, n) {
+  if (!p || !n) return '';
+  return [
+    `📅 ${n.dateDdMmYyyy} — ${n.headerMonthVaaram}`,
+    n.samvatsaraTitle,
+    `తిథి: ${n.tithiLine}`,
+    `నక్షత్రం: ${n.nakshatraLine}`,
+    `సూర్యోదయం: ${n.sunrise} | సూర్యాస్తమయం: ${n.sunset}`,
+    `రాహుకాలం: ${n.rahukalam}`,
+    p.phases?.phase4?.ekadashi ? `ఏకాదశి: ${p.phases.phase4.ekadashi}` : '',
+  ].filter(Boolean).join('\n');
+}
 
-const CARDS = [
-  { key: "tithi",      label: "Tithi",      icon: Moon,    color: "from-indigo-500 to-purple-600" },
-  { key: "nakshatra",  label: "Nakshatra",  icon: Star,    color: "from-amber-400 to-yellow-500"  },
-  { key: "rahukalam",  label: "Rahukalam",  icon: Clock,   color: "from-red-400 to-rose-500"      },
-  { key: "yamagandam", label: "Yamagandam", icon: Clock,   color: "from-orange-400 to-red-400"    },
-  { key: "sunrise",    label: "Sunrise",    icon: Sunrise, color: "from-amber-300 to-orange-400"  },
-  { key: "sunset",     label: "Sunset",     icon: Sunset,  color: "from-rose-300 to-pink-500"     },
-];
+function formatDisplayDate(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
 
 export default function Panchangam() {
   const [date, setDate] = useState(new Date());
-  const { data } = usePanchangam(date);
-  const panchangam = data || getPanchangamForDate(date);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, error, isFetching, refetch } = usePanchangam(date);
+  const p = data;
+  const n = p?.nithra;
+  const ph = p?.phases;
+  const dateKey = toIstDateKey(date);
+  const isToday = dateKey === toIstDateKey(new Date());
+  const dateLabel = n?.dateDdMmYyyy || formatDisplayDate(date);
 
-  function prevDay() { setDate(d => { const n = new Date(d); n.setDate(n.getDate() - 1); return n; }); }
-  function nextDay() { setDate(d => { const n = new Date(d); n.setDate(n.getDate() + 1); return n; }); }
+  function prevDay() {
+    setDate((d) => { const next = new Date(d); next.setDate(next.getDate() - 1); return next; });
+  }
+  function nextDay() {
+    setDate((d) => { const next = new Date(d); next.setDate(next.getDate() + 1); return next; });
+  }
+  function goToday() {
+    setDate(new Date());
+  }
+  function refresh() {
+    queryClient.invalidateQueries({ queryKey: ['panchangam'] });
+    refetch();
+  }
+  async function share() {
+    const text = buildShareText(p, n);
+    if (!text) return;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'పంచాంగం', text }); } catch { /* */ }
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+    }
+  }
+
+  const p3 = ph?.phase3 || n;
 
   return (
-    <div className="min-h-screen page-bg">
-      <div className="page-header px-4 sm:px-6 pt-5 sm:pt-8 pb-5">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="font-telugu font-bold text-2xl sm:text-3xl mb-4 gold-glow"
-            style={{ fontFamily: "Tiro Telugu, serif" }}>Panchangam</h1>
-          <div className="flex items-center gap-3 corner-card rounded-2xl p-3">
-            <button onClick={prevDay} className="p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
-              style={{ color: GOLD, border: '1px solid #C88F2D33' }}>
-              <ChevronLeft size={18} />
-            </button>
-            <div className="flex-1 text-center">
-              <p className="font-telugu font-bold text-base sm:text-lg leading-tight gold-glow"
-                style={{ fontFamily: "Tiro Telugu, serif" }}>{panchangam.dateLabel}</p>
-              <p className="text-sm font-telugu text-muted" style={{ fontFamily: "Tiro Telugu, serif" }}>{panchangam.day}</p>
-            </div>
-            <button onClick={nextDay} className="p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
-              style={{ color: GOLD, border: '1px solid #C88F2D33' }}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
+    <NithraPage onShare={n ? share : undefined}>
+      <PanchangamDatePicker
+        open={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        selectedDate={date}
+        onSelectDate={setDate}
+      />
+
+      {!isToday && <NithraTodayChip onClick={goToday} />}
+
+      {/* Date + calendar icon — always visible */}
+      <div className="panchang-card w-full mb-3 px-2 py-3" style={{ borderWidth: 2 }}>
+        <NithraDateSelector
+          dateLabel={dateLabel}
+          date={date}
+          onPrev={prevDay}
+          onNext={nextDay}
+          onOpenCalendar={() => setCalendarOpen(true)}
+          onDateChange={setDate}
+        />
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          className="mt-4 flex items-center gap-2 corner-card rounded-xl px-4 py-2.5 bg-elevated"
-          style={{ border: "1px solid rgba(74, 222, 128, 0.35)" }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: '#4ade8018', border: '1px solid #4ade8033' }}>
-            <Sparkles size={18} color="#4ade80" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-muted text-xs mb-0.5">Auspicious Time</p>
-            <p className="font-telugu font-semibold text-sm sm:text-base"
-              style={{ fontFamily: "Tiro Telugu, serif", color: '#86efac' }}>{panchangam.auspicious}</p>
-          </div>
+      {isLoading && !p && (
+        <p className="font-telugu text-center py-8 text-body">పంచాంగం లోడ్ అవుతోంది…</p>
+      )}
+
+      {isError && !p && (
+        <div className="text-center py-8 px-4">
+          <p className="font-telugu text-red-400 mb-2">పంచాంగం లోడ్ కాలేదు</p>
+          <p className="text-xs text-muted mb-3">{error?.message || 'సర్వర్ అందుబాటులో లేదు'}</p>
+          <button type="button" onClick={refresh} className="px-4 py-2 rounded-md font-telugu text-sm btn-gold">
+            మళ్లీ ప్రయత్నించు
+          </button>
+        </div>
+      )}
+
+      {p && !n && (
+        <div className="text-center py-8 px-4">
+          <p className="font-telugu text-body mb-3">పంచాంగం డేటా పూర్తిగా లేదు — నవీకరించండి</p>
+          <button type="button" onClick={refresh} className="px-4 py-2 rounded-md font-telugu text-sm btn-gold">
+            నవీకరించు
+          </button>
+        </div>
+      )}
+
+      {n && (
+        <motion.div
+          key={dateKey}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          <NithraHeaderCard n={n} />
+          <NithraBanner text={n.festivalBanner} />
+
+          <NithraSunMoonGrid n={n} />
+          <NithraPanchangGrid n={n} />
+          <NithraPhase4Grid phase4={ph?.phase4} />
+
+          {p3.shubhaSamayamulu && p3.shubhaSamayamulu !== '—' && (
+            <NithraSection title="శుభ సమయములు">{p3.shubhaSamayamulu}</NithraSection>
+          )}
+
+          {n.shraddhaTithi && n.shraddhaTithi !== '—' && (
+            <NithraSection title="శ్రాద్ధం తిథి (మధ్యాహ్నం ఉన్న తిథి)">{n.shraddhaTithi}</NithraSection>
+          )}
+
+          <NithraDualSection
+            leftTitle="రాహుకాలం"
+            leftValue={p3.rahukalam || n.rahukalam}
+            rightTitle="యమగండం"
+            rightValue={p3.yamagandam || n.yamagandam}
+          />
+
+          {(p3.durmuhurtham?.length > 0 || n.durmuhurtham?.length > 0) && (
+            <NithraSection title="దుర్ముహూర్తం">
+              {(p3.durmuhurtham || n.durmuhurtham).join(' • ')}
+            </NithraSection>
+          )}
+
+          <NithraDualSection
+            leftTitle="వర్జ్యము"
+            leftValue={(p3.varjyam || n.varjyam)?.[0] || '—'}
+            rightTitle="అమృత ఘడియలు"
+            rightValue={(p3.amritaKalam || n.amritaGadiyalu)?.[0] || '—'}
+          />
+
+          <NithraDualSection
+            leftTitle="గుళిక కాలం"
+            leftValue={p3.gulikaKalam || n.gulikakalam}
+            rightTitle="అభిజిత్ ముహూర్తం"
+            rightValue={p3.abhijitMuhurtham || n.abhijitMuhurtham}
+          />
+
+          {ph?.phase4?.festivals?.length > 0 && (
+            <NithraSection title="పండుగలు / వ్రతాలు">
+              {ph.phase4.festivals.map((f) => f.name).join(' • ')}
+            </NithraSection>
+          )}
+
+          {isFetching && (
+            <p className="text-center text-xs text-muted py-2">నవీకరిస్తోంది…</p>
+          )}
+
+          <button
+            type="button"
+            onClick={refresh}
+            className="w-full py-2 mb-4 rounded-md font-telugu text-sm btn-gold"
+          >
+            నవీకరించు
+          </button>
         </motion.div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4">
-          {CARDS.map((card, i) => {
-            const Icon = card.icon;
-            return (
-              <motion.div key={card.key}
-                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.07 }}
-                className="corner-card rounded-2xl p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={"w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br flex items-center justify-center " + card.color}>
-                    <Icon size={16} color="white" />
-                  </div>
-                  <span className="text-xs sm:text-sm text-muted">{card.label}</span>
-                </div>
-                <p className="font-telugu text-lg sm:text-xl font-bold gold-glow"
-                  style={{ fontFamily: "Tiro Telugu, serif" }}>
-                  {panchangam[card.key]}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 mb-8 corner-card rounded-2xl p-4 sm:p-6">
-          <h3 className="font-telugu font-bold text-base sm:text-lg mb-4 gold-glow"
-            style={{ fontFamily: "Tiro Telugu, serif" }}>Full Details</h3>
-          <div>
-            {[
-              ["Date", panchangam.dateLabel], ["Day", panchangam.day], ["Tithi", panchangam.tithi],
-              ["Nakshatra", panchangam.nakshatra], ["Rahukalam", panchangam.rahukalam],
-              ["Yamagandam", panchangam.yamagandam], ["Sunrise", panchangam.sunrise], ["Sunset", panchangam.sunset],
-            ].map(([label, value], idx) => (
-              <div key={label} className="flex items-center justify-between py-3"
-                style={{ borderTop: idx > 0 ? '1px solid #C88F2D15' : undefined }}>
-                <span className="font-telugu text-sm sm:text-base text-muted"
-                  style={{ fontFamily: "Tiro Telugu, serif" }}>{label}</span>
-                <span className="font-telugu font-semibold text-sm sm:text-base gold-glow"
-                  style={{ fontFamily: "Tiro Telugu, serif" }}>{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      )}
+    </NithraPage>
   );
 }

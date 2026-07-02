@@ -24,6 +24,7 @@ exports.signup = catchAsync(async (req, res) => {
     username: normalizedUsername,
     password,
     role: 'user',
+    last_login_at: new Date(),
   });
 
   const token = signToken({ id: user._id.toString(), role: user.role });
@@ -46,6 +47,9 @@ exports.login = catchAsync(async (req, res) => {
   if (!valid) {
     throw new AppError('Wrong password', 401, 'WRONG_PASSWORD');
   }
+
+  user.last_login_at = new Date();
+  await user.save({ validateBeforeSave: false });
 
   const token = signToken({ id: user._id.toString(), role: user.role });
   res.json(authResponse(token, user.toPublicJSON()));
@@ -91,5 +95,30 @@ exports.me = catchAsync(async (req, res) => {
 });
 
 exports.logout = catchAsync(async (req, res) => {
+  res.json({ ok: true });
+});
+
+exports.changePassword = catchAsync(async (req, res) => {
+  const { username, current_password, new_password } = req.body;
+
+  if (!username?.trim() || !current_password || !new_password) {
+    throw new AppError('Username, current password, and new password are required', 400, 'BAD_REQUEST');
+  }
+  if (new_password.length < 4) {
+    throw new AppError('New password must be at least 4 characters', 400, 'BAD_REQUEST');
+  }
+
+  const user = await User.findOne({ username: username.trim().toLowerCase(), role: 'user' }).select('+password');
+  if (!user) {
+    throw new AppError('User not found', 404, 'NOT_FOUND');
+  }
+
+  const valid = await user.comparePassword(current_password);
+  if (!valid) {
+    throw new AppError('Current password is incorrect', 401, 'WRONG_PASSWORD');
+  }
+
+  user.password = new_password;
+  await user.save();
   res.json({ ok: true });
 });

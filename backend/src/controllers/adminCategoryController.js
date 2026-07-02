@@ -3,13 +3,19 @@ const Subcategory = require('../models/subcategory.model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const { resolveCategoryStyles } = require('../utils/categoryStyles');
-const { DEFAULT_CATEGORIES } = require('../data/defaultCategories');
+const { FILTER_CATEGORY_SLUGS } = require('../data/defaultCategories');
+const { deleteByUrl } = require('../utils/cloudinaryDelete');
 
 function slugify(text) {
   return text.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
-const MAIN_CATEGORY_KEYS = new Set(DEFAULT_CATEGORIES.map((c) => c.slug));
+const FILTER_CAT_KEYS = new Set(FILTER_CATEGORY_SLUGS);
+
+async function getMainCategoryKeys() {
+  const categories = await Category.find().select('slug');
+  return new Set(categories.map((c) => c.slug));
+}
 
 exports.listCategories = catchAsync(async (req, res) => {
   const categories = await Category.find().sort({ label_en: 1 });
@@ -52,7 +58,10 @@ exports.updateCategory = catchAsync(async (req, res) => {
 
   const { label, label_en, color, bg, text } = req.body;
 
-  if (label !== undefined) category.label = label.trim();
+  if (label !== undefined) {
+    category.label = label.trim();
+    category.label_te = label.trim();
+  }
   if (label_en !== undefined) category.label_en = label_en.trim();
   if (color !== undefined) category.color = color;
   if (bg !== undefined) category.bg = bg;
@@ -94,7 +103,8 @@ exports.createSubcategory = catchAsync(async (req, res) => {
   } = req.body;
 
   const parentKey = parent_key?.trim().toLowerCase();
-  if (!parentKey || !MAIN_CATEGORY_KEYS.has(parentKey)) {
+  const mainKeys = await getMainCategoryKeys();
+  if (!parentKey || !mainKeys.has(parentKey)) {
     throw new AppError('Valid parent category is required', 400, 'BAD_REQUEST');
   }
   if (!label?.trim() || !label_en?.trim()) {
@@ -148,7 +158,8 @@ exports.updateSubcategory = catchAsync(async (req, res) => {
 
   if (parent_key !== undefined) {
     const parentKey = parent_key.trim().toLowerCase();
-    if (!MAIN_CATEGORY_KEYS.has(parentKey)) {
+    const mainKeys = await getMainCategoryKeys();
+    if (!mainKeys.has(parentKey)) {
       throw new AppError('Valid parent category is required', 400, 'BAD_REQUEST');
     }
     subcategory.parent_key = parentKey;
@@ -160,7 +171,13 @@ exports.updateSubcategory = catchAsync(async (req, res) => {
   if (color !== undefined) subcategory.color = color;
   if (bg !== undefined) subcategory.bg = bg;
   if (text !== undefined) subcategory.text = text;
-  if (image_url !== undefined) subcategory.image_url = image_url || null;
+  if (image_url !== undefined) {
+    const previousUrl = subcategory.image_url;
+    subcategory.image_url = image_url || null;
+    if (previousUrl && previousUrl !== subcategory.image_url) {
+      await deleteByUrl(previousUrl);
+    }
+  }
   if (search_terms !== undefined) {
     subcategory.search_terms = Array.isArray(search_terms)
       ? search_terms.map((item) => String(item).trim()).filter(Boolean)
@@ -174,5 +191,6 @@ exports.updateSubcategory = catchAsync(async (req, res) => {
 exports.deleteSubcategory = catchAsync(async (req, res) => {
   const subcategory = await Subcategory.findOneAndDelete({ slug: req.params.id });
   if (!subcategory) throw new AppError('Subcategory not found', 404, 'NOT_FOUND');
+  if (subcategory.image_url) await deleteByUrl(subcategory.image_url);
   res.json({ ok: true });
 });

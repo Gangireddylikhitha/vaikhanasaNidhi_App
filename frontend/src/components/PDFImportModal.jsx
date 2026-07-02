@@ -296,15 +296,16 @@ export default function PDFImportModal({ categories, onSave, onClose }) {
                     </p>
                   </div>
 
-                  <div className="flex gap-3 pt-2">
+                  <div className="modal-actions modal-actions--inline">
                     <button type="button" onClick={onClose}
-                      className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200">
-                      Cancel
+                      className="modal-btn text-gray-500 bg-gray-100 hover:bg-gray-200">
+                      <span className="modal-btn-label">Cancel</span>
                     </button>
                     <button type="submit"
-                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold"
+                      className="modal-btn modal-btn-primary"
                       style={{ background: GOLD, color: GOLD_DARK }}>
-                      <Save size={15} /> Save Scripture
+                      <Save size={14} className="modal-btn-icon" />
+                      <span className="modal-btn-label">Save Scripture</span>
                     </button>
                   </div>
                 </form>

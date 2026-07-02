@@ -1,9 +1,10 @@
-import { motion } from "framer-motion"; // Imported back for future animations if needed
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import { MAIN_CATEGORIES } from "../data/categories";
+import { usePublicCategories } from "../hooks/usePublicCategories";
 
 export default function CategoriesPage() {
+  const { data: categories = [], isLoading } = usePublicCategories();
+
   return (
     <div className="min-h-screen page-bg pb-24">
       <div className="page-header px-4 sm:px-6 pt-5 pb-5">
@@ -16,19 +17,17 @@ export default function CategoriesPage() {
         <p className="text-sm text-muted mt-1">Sacred pathways to eternal knowledge</p>
       </div>
 
-      {/* Added max-w-5xl and mx-auto to maintain a neat card dimension on desktop screens */}
       <div className="px-4 sm:px-6 py-3 w-full max-w-5xl mx-auto">
-        {/* Changed grid-cols-2 to grid-cols-4 so exactly 4 cards fit on one line */}
         <div className="grid grid-cols-4 gap-3 sm:gap-4 w-full">
-          {MAIN_CATEGORIES.map(cat => {
+          {categories.map(cat => {
             const Icon = cat.icon;
+            if (!cat.img || !Icon) return null;
             return (
               <Link
                 key={cat.key}
                 to={`/categories/${cat.key}`}
                 className="main-category-card block w-full"
               >
-                {/* Ensure aspect ratio handles smaller container bounds elegantly */}
                 <div className="main-category-card-media relative overflow-hidden aspect-square rounded-xl" style={{ border: "1px solid var(--border-subtle)" }}>
                   <img src={cat.img} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
                   <div className="main-category-card-icon absolute top-2 right-2">

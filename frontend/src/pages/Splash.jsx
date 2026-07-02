@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function Splash({ onDone }) {
   const [phase, setPhase] = useState("in");   // "in" | "hold" | "out"
@@ -22,6 +23,9 @@ export default function Splash({ onDone }) {
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden page-bg"
           style={{ backgroundImage: "var(--hero-glow)" }}
         >
+          <div className="absolute top-4 right-4 z-20">
+            <ThemeToggle />
+          </div>
 
           {/* ── ambient glow rings ── */}
           <motion.div

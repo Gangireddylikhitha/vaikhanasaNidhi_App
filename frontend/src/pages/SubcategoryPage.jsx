@@ -3,15 +3,17 @@ import { Link, useParams, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, BookOpen, Search } from "lucide-react";
 import {
-  getMainCategory,
   getSubcategories,
   subcategorySearchUrl,
 } from "../data/categories";
 import { usePublicSubcategories } from "../hooks/usePublicSubcategories";
+import { usePublicCategories } from "../hooks/usePublicCategories";
+import { findMainCategory } from "../utils/categoryLookup";
 
 export default function SubcategoryPage() {
   const { categoryKey } = useParams();
-  const category = getMainCategory(categoryKey);
+  const { data: mainCategories = [], isLoading } = usePublicCategories();
+  const category = findMainCategory(mainCategories, categoryKey);
   const staticSubs = getSubcategories(categoryKey);
   const { data: dynamicSubs = [] } = usePublicSubcategories(categoryKey);
   const [query, setQuery] = useState("");
@@ -40,84 +42,85 @@ export default function SubcategoryPage() {
     );
   }, [subs, query]);
 
-  if (!category) return <Navigate to="/categories" replace />;
+  if (!isLoading && mainCategories.length && !category) {
+    return <Navigate to="/categories" replace />;
+  }
+
+  if (!category) return null;
+
+  const Icon = category.icon;
+  const title = category.label_te || category.label;
+  const subtitle = category.label_en || category.en;
 
   return (
     <div className="min-h-screen page-bg pb-24">
       <div className="page-header px-4 sm:px-6 pt-5 pb-5">
-        <Link
-          to="/categories"
-          className="inline-flex items-center gap-1 text-xs text-muted mb-3 hover:opacity-80"
-        >
+        <Link to="/categories" className="inline-flex items-center gap-1 text-xs text-muted mb-3 hover:opacity-80">
           <ChevronLeft size={14} /> Back
         </Link>
-        <h1
-          className="font-telugu font-bold text-xl sm:text-2xl gold-glow"
-          style={{ fontFamily: "Tiro Telugu, serif" }}
-        >
-          {category.label}
-        </h1>
-        <p className="text-sm text-muted mt-1">{category.en}</p>
+        <div className="flex items-center gap-3">
+          {category.img && (
+            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0" style={{ border: "1px solid var(--border-subtle)" }}>
+              <img src={category.img} alt={title} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div>
+            <h1 className="font-telugu font-bold text-xl gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
+              {title}
+            </h1>
+            <p className="text-sm text-muted">{subtitle}</p>
+          </div>
+          {Icon && (
+            <div className="ml-auto w-10 h-10 rounded-xl flex items-center justify-center bg-elevated" style={{ border: "1px solid var(--border-subtle)" }}>
+              <Icon size={18} className="text-primary-gold" />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-4 sm:px-6 max-w-2xl mx-auto">
         {category.hasSearch && (
-          <div className="flex gap-2 mb-4">
-            <div
-              className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5 bg-card"
-              style={{ border: "1px solid var(--border-subtle)" }}
-            >
-              <Search size={16} className="text-muted flex-shrink-0" />
-              <input
-                type="search"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder={category.searchPlaceholder || "Search..."}
-                className="flex-1 bg-transparent text-sm outline-none text-body placeholder:text-muted"
-                style={{ fontFamily: "Tiro Telugu, serif" }}
-              />
-            </div>
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={category.searchPlaceholder || "వెతకండి..."}
+              className="w-full pl-10 pr-4 py-3 rounded-xl form-input text-sm"
+            />
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filtered.map((sub, i) => (
             <motion.div
               key={sub.key}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.3 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
             >
               <Link
                 to={subcategorySearchUrl(categoryKey, sub)}
-                className="subcategory-row gold-card flex items-center gap-3 px-4 py-3.5 w-full"
+                className="corner-card rounded-xl p-4 flex items-center gap-3 hover:brightness-110 transition-all"
               >
-                <div className="subcategory-row-icon flex-shrink-0">
-                  {sub.img ? (
-                    <img
-                      src={sub.img}
-                      alt=""
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <BookOpen size={18} className="text-primary-gold" />
-                  )}
+                {sub.img ? (
+                  <img src={sub.img} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-elevated flex items-center justify-center flex-shrink-0">
+                    <BookOpen size={18} className="text-muted" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-telugu font-semibold gold-glow truncate" style={{ fontFamily: "Tiro Telugu, serif" }}>
+                    {sub.labelTe || sub.label}
+                  </p>
+                  <p className="text-xs text-muted truncate">{sub.label}</p>
                 </div>
-                <span
-                  className="flex-1 font-telugu font-semibold text-scale-sm gold-glow text-left"
-                  style={{ fontFamily: "Tiro Telugu, serif" }}
-                >
-                  {sub.labelTe || sub.label}
-                </span>
-                <ChevronRight size={18} className="text-muted flex-shrink-0" />
+                <ChevronRight size={16} className="text-muted flex-shrink-0" />
               </Link>
             </motion.div>
           ))}
         </div>
-
-        {filtered.length === 0 && (
-          <p className="text-center text-muted text-sm py-10">No subcategories found</p>
-        )}
       </div>
     </div>
   );

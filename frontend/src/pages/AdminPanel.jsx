@@ -5,6 +5,8 @@ import AdminHeader from '../components/admin/AdminHeader';
 import AdminDashboard from './adminPages/AdminDashboard';
 import AdminScriptures from './adminPages/AdminScriptures';
 import AdminCategories from './adminPages/AdminCategories';
+import AdminGallery from './adminPages/AdminGallery';
+import AdminVerifications from './adminPages/AdminVerifications';
 
 export default function AdminPanel({ onLogout }) {
   const [tab, setTab] = useState('dashboard');
@@ -37,7 +39,9 @@ export default function AdminPanel({ onLogout }) {
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               {tab === 'dashboard' && <AdminDashboard />}
+              {tab === 'verifications' && <AdminVerifications />}
               {tab === 'scriptures' && <AdminScriptures />}
+              {tab === 'gallery' && <AdminGallery />}
               {tab === 'categories' && <AdminCategories />}
             </motion.div>
           </AnimatePresence>

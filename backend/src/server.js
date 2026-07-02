@@ -4,6 +4,9 @@ const app = require('./app');
 const { connectDatabase } = require('./config/database');
 const { seedAdminUser } = require('./utils/seedAdmin');
 const { seedDefaultCategories, seedDefaultSubcategories } = require('./utils/seedContent');
+const { seedDefaultGalleryEvents } = require('./utils/seedGallery');
+const { startNotificationScheduler } = require('./services/notificationService');
+const { startPanchangamScheduler } = require('./services/panchangamScheduler');
 
 const PORT = process.env.PORT || 5000;
 
@@ -17,11 +20,14 @@ async function start() {
   await seedAdminUser();
   await seedDefaultCategories();
   await seedDefaultSubcategories();
+  await seedDefaultGalleryEvents();
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`API base: http://localhost:${PORT}/api`);
     console.log('Dashboard API: totalScriptures, totalCategories, totalSubcategories, byCategory (8 bars)');
+    startPanchangamScheduler();
+    startNotificationScheduler();
   });
 }
 

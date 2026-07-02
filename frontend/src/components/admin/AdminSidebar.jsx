@@ -3,7 +3,7 @@ import { ChevronRight, LogOut, X } from 'lucide-react';
 import { ADMIN_TABS, GOLD_TEXT } from '../../constants/adminConstants';
 import logo from '../../assets/images/logo.png';
 
-export default function AdminSidebar({ tab, sidebarOpen, onTabChange, onCloseSidebar, onLogout }) {
+export default function AdminSidebar({ tab, sidebarOpen, onTabChange, onCloseSidebar, onLogout, pendingVerifications = 0 }) {
   return (
     <>
       <AnimatePresence>
@@ -48,6 +48,12 @@ export default function AdminSidebar({ tab, sidebarOpen, onTabChange, onCloseSid
                   }}>
                   <Icon size={17} />
                   {label}
+                  {id === 'verifications' && pendingVerifications > 0 && (
+                    <span className="ml-1 min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center"
+                      style={{ background: '#d97706', color: '#fff' }}>
+                      {pendingVerifications}
+                    </span>
+                  )}
                   {tab === id && <ChevronRight size={14} className="ml-auto" />}
                 </button>
               ))}

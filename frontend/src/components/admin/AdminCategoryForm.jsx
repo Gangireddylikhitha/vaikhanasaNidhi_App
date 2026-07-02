@@ -3,13 +3,19 @@ import { motion } from 'framer-motion';
 import { X, Save, Loader2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { GOLD_TEXT, COLOR_OPTIONS } from '../../constants/adminConstants';
-import { MAIN_CATEGORIES } from '../../data/categories';
 import { uploadSubcategoryImage } from '../../api/uploadApi';
 import { mapAdminError } from '../../lib/apiError';
 
-export default function AdminCategoryForm({ category, defaultParentKey, onSave, onClose, isSaving = false }) {
+export default function AdminCategoryForm({
+  category,
+  defaultParentKey,
+  mainCategories = [],
+  onSave,
+  onClose,
+  isSaving = false,
+}) {
   const isEdit = !!category?.id;
-  const initialParent = category?.parent_key || defaultParentKey || MAIN_CATEGORIES[0]?.key || 'stotra';
+  const initialParent = category?.parent_key || defaultParentKey || mainCategories[0]?.key || mainCategories[0]?.id || 'stotra';
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(category?.image_url || null);
@@ -110,8 +116,10 @@ export default function AdminCategoryForm({ category, defaultParentKey, onSave, 
               onChange={(e) => handleParentChange(e.target.value)}
               className="form-select"
             >
-              {MAIN_CATEGORIES.map((item) => (
-                <option key={item.key} value={item.key}>{item.en} — {item.label}</option>
+              {mainCategories.map((item) => (
+                <option key={item.key || item.id} value={item.key || item.id}>
+                  {item.label_en} — {item.label_te || item.label}
+                </option>
               ))}
             </select>
           </div>
@@ -168,13 +176,15 @@ export default function AdminCategoryForm({ category, defaultParentKey, onSave, 
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="modal-actions modal-actions--inline">
             <button type="button" onClick={onClose} disabled={busy}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold btn-ghost disabled:opacity-50">Cancel</button>
+              className="modal-btn btn-ghost disabled:opacity-50">
+              <span className="modal-btn-label">Cancel</span>
+            </button>
             <button type="submit" disabled={busy}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold btn-gold disabled:opacity-50">
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              {isEdit ? 'Save Changes' : 'Add Subcategory'}
+              className="modal-btn modal-btn-primary btn-gold disabled:opacity-50">
+              {busy ? <Loader2 size={14} className="modal-btn-icon animate-spin" /> : <Save size={14} className="modal-btn-icon" />}
+              <span className="modal-btn-label">{isEdit ? 'Save Changes' : 'Add Subcategory'}</span>
             </button>
           </div>
         </form>

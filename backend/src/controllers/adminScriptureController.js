@@ -3,15 +3,25 @@ const Category = require('../models/category.model');
 const Subcategory = require('../models/subcategory.model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const {
+  deleteManyUrls,
+  collectScriptureImageUrls,
+  diffRemovedUrls,
+} = require('../utils/cloudinaryDelete');
 
-const { DEFAULT_CATEGORIES, FILTER_CATEGORY_SLUGS } = require('../data/defaultCategories');
+const { FILTER_CATEGORY_SLUGS } = require('../data/defaultCategories');
 
-const MAIN_CATEGORY_KEYS = new Set(DEFAULT_CATEGORIES.map((c) => c.slug));
 const FILTER_CAT_KEYS = new Set(FILTER_CATEGORY_SLUGS);
+
+async function getMainCategoryKeys() {
+  const categories = await Category.find().select('slug');
+  return new Set(categories.map((c) => c.slug));
+}
 
 async function assertCategoryExists(categorySlug) {
   const slug = categorySlug.trim().toLowerCase();
-  if (MAIN_CATEGORY_KEYS.has(slug) || FILTER_CAT_KEYS.has(slug)) return slug;
+  const mainKeys = await getMainCategoryKeys();
+  if (mainKeys.has(slug) || FILTER_CAT_KEYS.has(slug)) return slug;
   const exists = await Category.findOne({ slug });
   if (!exists) throw new AppError('Invalid category', 400, 'BAD_REQUEST');
   return slug;
@@ -168,6 +178,8 @@ exports.updateScripture = catchAsync(async (req, res) => {
   if (description !== undefined) scripture.description = description;
   if (popularity !== undefined) scripture.popularity = popularity;
 
+  const previousUrls = collectScriptureImageUrls(scripture);
+
   if (verses !== undefined || images !== undefined || category !== undefined
     || parent_category !== undefined || subcategory !== undefined) {
     const content = resolveContentPayload(
@@ -188,6 +200,12 @@ exports.updateScripture = catchAsync(async (req, res) => {
     scripture.cover_url = cover_url;
   }
 
+  const nextUrls = collectScriptureImageUrls(scripture);
+  const removedUrls = diffRemovedUrls(previousUrls, nextUrls);
+  if (removedUrls.length) {
+    await deleteManyUrls(removedUrls);
+  }
+
   await scripture.save();
   res.json(scripture.toAdminJSON());
 });
@@ -195,5 +213,6 @@ exports.updateScripture = catchAsync(async (req, res) => {
 exports.deleteScripture = catchAsync(async (req, res) => {
   const scripture = await Scripture.findByIdAndDelete(req.params.id);
   if (!scripture) throw new AppError('Scripture not found', 404, 'NOT_FOUND');
+  await deleteManyUrls(collectScriptureImageUrls(scripture));
   res.json({ ok: true });
 });

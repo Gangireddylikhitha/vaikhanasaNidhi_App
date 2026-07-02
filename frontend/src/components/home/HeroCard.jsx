@@ -3,17 +3,21 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, BookOpen, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
 import { getDailySahasranamaSloka, getDailySahasranamaIndex, msUntilMidnight } from "../../lib/dailySloka";
+import { useDailySloka } from "../../hooks/useDailySloka";
 import heroImg from "../../assets/images/heroImg.png";
 
 export default function HeroCard() {
-  const [sloka, setSloka] = useState(getDailySahasranamaSloka);
+  const { data: apiSloka, refetch } = useDailySloka();
+  const fallback = getDailySahasranamaSloka();
+  const sloka = apiSloka?.telugu ? apiSloka : fallback;
+  const slokaIndex = apiSloka?.index || getDailySahasranamaIndex();
   const [open, setOpen] = useState(false);
   const [showMeaning, setShowMeaning] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setSloka(getDailySahasranamaSloka()), msUntilMidnight());
+    const timer = setTimeout(() => refetch(), msUntilMidnight());
     return () => clearTimeout(timer);
-  }, [sloka]);
+  }, [apiSloka, refetch]);
 
   function handleShare() {
     if (navigator.share) navigator.share({ title: "Vaikhanasa Nidhi", text: sloka.telugu });
@@ -26,7 +30,7 @@ export default function HeroCard() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="hero-card mx-3 sm:mx-6 lg:mx-8 mt-4 sm:mt-6 lg:mt-8"
+        className="hero-card mx-3 sm:mx-6 lg:mx-8 mt-3 sm:mt-6 lg:mt-8"
       >
         <div className="hero-card-shell rounded-2xl sm:rounded-3xl overflow-hidden">
           <div className="hero-card-texture" aria-hidden="true" />
@@ -43,10 +47,10 @@ export default function HeroCard() {
           </div>
 
           <div className="hero-content">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-3">
               <Sparkles size={13} className="text-primary-gold flex-shrink-0" />
               <span className="hero-eyebrow">
-                {sloka.source || `శ్రీ విష్ణు సహస్రనామం — శ్లోకం ${getDailySahasranamaIndex()}`}
+                {sloka.source || `శ్రీ విష్ణు సహస్రనామం — శ్లోకం ${slokaIndex}`}
               </span>
             </div>
 
@@ -111,7 +115,7 @@ export default function HeroCard() {
                   <Sparkles size={14} className="text-primary-gold" />
                   <div>
                     <p className="font-bold text-sm gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
-                      నేటి విష్ణు సహస్రనామ శ్లోకం — {getDailySahasranamaIndex()}
+                      నేటి విష్ణు సహస్రనామ శ్లోకం — {slokaIndex}
                     </p>
                     <p className="text-xs text-muted">{sloka.source}</p>
                   </div>

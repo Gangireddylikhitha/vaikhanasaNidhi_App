@@ -1,5 +1,7 @@
 const Subcategory = require('../models/subcategory.model');
 const Scripture = require('../models/scripture.model');
+const User = require('../models/user.model');
+const VerificationApplication = require('../models/verificationApplication.model');
 const catchAsync = require('../utils/catchAsync');
 const { DEFAULT_CATEGORIES } = require('../data/defaultCategories');
 const { DEFAULT_SUBCATEGORIES } = require('../data/defaultSubcategories');
@@ -19,10 +21,29 @@ function isImageGalleryScripture(s) {
   return s.parent_category === 'chitralu' || s.category === 'chitralu' || (s.images?.length > 0);
 }
 
+function mapRecentUser(user) {
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    username: user.username,
+    verification_status: user.verification_status || 'none',
+    last_login_at: user.last_login_at || null,
+    joined_at: user.createdAt,
+  };
+}
+
 exports.getDashboard = catchAsync(async (req, res) => {
-  const [scriptures, subcategoryCount] = await Promise.all([
+  const [scriptures, subcategoryCount, totalUsers, pendingVerifications, approvedVerifications, recentUsers] = await Promise.all([
     Scripture.find().lean(),
     countSubcategories(),
+    User.countDocuments({ role: 'user' }),
+    VerificationApplication.countDocuments({ status: 'pending' }),
+    VerificationApplication.countDocuments({ status: 'approved' }),
+    User.find({ role: 'user' })
+      .sort({ last_login_at: -1, createdAt: -1 })
+      .limit(10)
+      .select('name username verification_status last_login_at createdAt')
+      .lean(),
   ]);
 
   const textScriptures = scriptures.filter((s) => !isImageGalleryScripture(s));
@@ -47,5 +68,9 @@ exports.getDashboard = catchAsync(async (req, res) => {
     totalCategories: DEFAULT_CATEGORIES.length,
     totalSubcategories: subcategoryCount,
     byCategory,
+    totalUsers,
+    pendingVerifications,
+    approvedVerifications,
+    recentUsers: recentUsers.map(mapRecentUser),
   });
 });

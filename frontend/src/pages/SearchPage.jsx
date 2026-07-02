@@ -6,18 +6,17 @@ import ScriptureCard from "../components/ScriptureCard";
 import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
 import { usePublicScriptures } from "../hooks/usePublicScriptures";
 import { usePublicSubcategories } from "../hooks/usePublicSubcategories";
+import { usePublicCategories } from "../hooks/usePublicCategories";
 import {
-  MAIN_CATEGORIES,
   getSubcategories,
-  getMainCategory,
   resolveBrowseParentKey,
 } from "../data/categories";
+import { findMainCategory } from "../utils/categoryLookup";
 import { getScriptureBadgeLabel } from "../utils/scriptureSubcategoryMatch";
 
 const GOLD = "#E4B24B";
 const GOLD_SOLID = "#C88F2D";
 const TRENDING = ["Venkateswara", "Gayatri", "Lakshmi", "Suprabhatam", "Sahasranama", "Mantra", "Narasimha", "Hayagriva"];
-const ALL_CATS = [{ key: "all", label: "All" }, ...MAIN_CATEGORIES.map(c => ({ key: c.key, label: c.label }))];
 
 function mergePublicSubcategories(parentKey, dynamicSubs = []) {
   const staticSubs = getSubcategories(parentKey);
@@ -34,8 +33,8 @@ function mergePublicSubcategories(parentKey, dynamicSubs = []) {
   return [...byKey.values()];
 }
 
-function ScriptureRow({ scripture, parentKey, subcategories }) {
-  const badge = getScriptureBadgeLabel(scripture, parentKey, subcategories);
+function ScriptureRow({ scripture, parentKey, subcategories, mainCategories }) {
+  const badge = getScriptureBadgeLabel(scripture, parentKey, subcategories, mainCategories);
 
   return (
     <a href={"/read/" + scripture.id}
@@ -64,8 +63,16 @@ function ScriptureRow({ scripture, parentKey, subcategories }) {
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { data: mainCategories = [] } = usePublicCategories();
+  const allCats = useMemo(
+    () => [{ key: "all", label: "All" }, ...mainCategories.map((c) => ({
+      key: c.key || c.slug,
+      label: c.label_te || c.label,
+    }))],
+    [mainCategories]
+  );
   const subFromUrl = searchParams.get("sub");
-  const parentKey = resolveBrowseParentKey(searchParams);
+  const parentKey = resolveBrowseParentKey(searchParams, mainCategories);
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -75,7 +82,7 @@ export default function SearchPage() {
   const [, forceUpdate] = useState(0);
 
   const browseMode = !!parentKey;
-  const mainCategory = browseMode ? getMainCategory(parentKey) : null;
+  const mainCategory = browseMode ? findMainCategory(mainCategories, parentKey) : null;
 
   const { data: dynamicSubs = [] } = usePublicSubcategories(parentKey, { enabled: !!parentKey });
   const subcategories = useMemo(
@@ -177,7 +184,7 @@ export default function SearchPage() {
     );
   }
 
-  const chips = browseMode ? subChips : ALL_CATS;
+  const chips = browseMode ? subChips : allCats;
   const activeChipKey = browseMode ? activeSubKey : activeCat;
 
   const activeSub = browseMode && activeSubKey !== "all"
@@ -294,7 +301,7 @@ export default function SearchPage() {
                   {scriptures.map((s, i) => (
                     <motion.div key={s.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(i * 0.02, 0.3) }}>
-                      <ScriptureRow scripture={s} parentKey={parentKey} subcategories={subcategories} />
+                      <ScriptureRow scripture={s} parentKey={parentKey} subcategories={subcategories} mainCategories={mainCategories} />
                     </motion.div>
                   ))}
                 </div>
@@ -328,7 +335,7 @@ export default function SearchPage() {
                   {results.map((s, i) => (
                     <motion.div key={s.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: Math.min(i * 0.02, 0.25) }}>
-                      <ScriptureRow scripture={s} parentKey={parentKey} subcategories={subcategories} />
+                      <ScriptureRow scripture={s} parentKey={parentKey} subcategories={subcategories} mainCategories={mainCategories} />
                     </motion.div>
                   ))}
                 </div>

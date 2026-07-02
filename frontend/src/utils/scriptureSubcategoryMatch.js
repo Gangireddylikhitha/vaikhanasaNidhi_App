@@ -1,7 +1,7 @@
 /** Match scriptures to subcategories (including legacy docs without subcategory field). */
 
 import { getSubcategory } from '../data/categories';
-import { getCategoryInfo } from '../data/scriptures';
+import { getCategoryInfo } from './categoryLookup';
 
 function titleHay(scripture) {
   return `${scripture.title_telugu || ''} ${scripture.title_english || ''} ${scripture.description || ''}`.toLowerCase();
@@ -130,7 +130,7 @@ export function countScripturesForMainSection(scriptures, parentKey, allSubs = [
   return matched.size;
 }
 
-export function getScriptureBadgeLabel(scripture, parentKey, subcategories = []) {
+export function getScriptureBadgeLabel(scripture, parentKey, subcategories = [], mainCategories = []) {
   const pk = parentKey || scripture.parent_category;
   const subKey = scripture.subcategory || (pk ? getScriptureSubcategoryKey(scripture, pk) : null);
 
@@ -141,7 +141,7 @@ export function getScriptureBadgeLabel(scripture, parentKey, subcategories = [])
     if (staticSub) return staticSub.labelTe || staticSub.label;
   }
 
-  return getCategoryInfo(scripture.category).label;
+  return getCategoryInfo(scripture.category, mainCategories).label;
 }
 
 export function getScriptureSubcategoryKey(scripture, parentKey) {

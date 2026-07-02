@@ -1,5 +1,3 @@
-import { Music, Zap, BookMarked, FlameKindling, Library, Landmark, HelpCircle, Image } from "lucide-react";
-
 import imgStotras from "../assets/catagoryImages/stotras.png";
 import imgMantras from "../assets/catagoryImages/mantras.png";
 import imgAgama from "../assets/catagoryImages/agama.png";
@@ -7,83 +5,8 @@ import imgPooja from "../assets/catagoryImages/puja_vidhanam.png";
 import imgBooks from "../assets/catagoryImages/grandalu.png";
 import imgAshtottaram from "../assets/catagoryImages/astothranamalu.png";
 import imgSahasranamam from "../assets/catagoryImages/sahastranamalu.png";
-import alaya_viseshalu from "../assets/catagoryImages/alayaavisesalu.png";
-import vaikhanasa_sandeha_nivrutti from "../assets/catagoryImages/vaikhanasaSandeha.png";
-import imgChitralu from "../assets/catagoryImages/chitralu.png";
 
-/** Top-level categories (పంచాంగం removed — still at /panchangam via nav/widget) */
-export const MAIN_CATEGORIES = [
-  {
-    key: "stotra",
-    label: "స్తోత్రాలు",
-    en: "Stotras",
-    icon: Music,
-    img: imgSahasranamam,
-    hasSearch: false,
-  },
-  {
-    key: "mantra",
-    label: "మంత్రాలు",
-    en: "Mantras",
-    icon: Zap,
-    img: imgMantras,
-    hasSearch: false,
-  },
-  {
-    key: "agama",
-    label: "వైఖానస ఆగమము",
-    en: "Vaikhanasa Agama",
-    icon: BookMarked,
-    img: imgAgama,
-    hasSearch: false,
-  },
-  {
-    key: "pooja_vidhanam",
-    label: "పూజా విధానం",
-    en: "Puja Vidhanam",
-    icon: FlameKindling,
-    img: imgPooja,
-    hasSearch: true,
-    searchPlaceholder: "పుస్తక శీర్షికతో వెతకండి...",
-  },
-  {
-    key: "book",
-    label: "పుస్తకాలు",
-    en: "Books",
-    icon: Library,
-    img: imgBooks,
-    hasSearch: true,
-    searchPlaceholder: "పుస్తక శీర్షికతో వెతకండి...",
-  },
-  {
-    key: "alaya_viseshalu",
-    label: "ఆలయ విశేషాలు",
-    en: "Temple Specialties",
-    icon: Landmark,
-    img: alaya_viseshalu,
-    hasSearch: true,
-    searchPlaceholder: "పుస్తక శీర్షికతో వెతకండి...",
-  },
-  {
-    key: "sandeha_nivrutti",
-    label: "వైఖానస సందేహ నివృత్తి",
-    en: "Vaikhanasa Q&A",
-    icon: HelpCircle,
-    img: vaikhanasa_sandeha_nivrutti,
-    hasSearch: false,
-  },
-  {
-    key: "chitralu",
-    label: "చిత్రాలు",
-    en: "Images",
-    icon: Image,
-    img: imgChitralu,
-    hasSearch: true,
-    searchPlaceholder: "చిత్రాలు వెతకండి...",
-  },
-];
-
-/** Subcategories per main category */
+/** Fallback subcategories when API has no data yet */
 export const SUBCATEGORIES = {
   stotra: [
     { key: "ashtotharams", label: "Ashtotharams", labelTe: "అష్టోత్తరాలు", filterCat: "ashtottaram", img: imgAshtottaram },
@@ -138,50 +61,44 @@ export const SUBCATEGORIES = {
   ],
 };
 
-export function getMainCategory(key) {
-  return MAIN_CATEGORIES.find(c => c.key === key) || null;
-}
-
 export function getSubcategories(parentKey) {
   return SUBCATEGORIES[parentKey] || [];
 }
 
 export function getSubcategory(parentKey, subKey) {
-  return getSubcategories(parentKey).find(s => s.key === subKey) || null;
+  return getSubcategories(parentKey).find((s) => s.key === subKey) || null;
 }
 
-/** Find main category key that owns a subcategory key */
-export function findParentForSubKey(subKey) {
+export function findParentForSubKey(subKey, mainCategories = [], dynamicSubs = []) {
   if (!subKey) return null;
-  for (const main of MAIN_CATEGORIES) {
-    if (getSubcategories(main.key).some((s) => s.key === subKey)) {
-      return main.key;
-    }
+  for (const main of mainCategories) {
+    const key = main.key || main.slug;
+    if (getSubcategories(key).some((s) => s.key === subKey)) return key;
   }
+  const fromApi = dynamicSubs.find((item) => item.key === subKey);
+  if (fromApi?.parent_key) return fromApi.parent_key;
   return null;
 }
 
-/** Resolve parent from URL search params */
-export function resolveBrowseParentKey(searchParams, dynamicSubs = []) {
+export function resolveBrowseParentKey(searchParams, mainCategories = [], dynamicSubs = []) {
   const parent = searchParams.get('parent');
   if (parent) return parent;
   const sub = searchParams.get('sub');
-  const fromSub = findParentForSubKey(sub);
+  const fromSub = findParentForSubKey(sub, mainCategories, dynamicSubs);
   if (fromSub) return fromSub;
   if (sub && dynamicSubs.length) {
     const match = dynamicSubs.find((item) => item.key === sub);
     if (match?.parent_key) return match.parent_key;
   }
   const cat = searchParams.get('cat');
-  if (cat && MAIN_CATEGORIES.some((c) => c.key === cat)) return cat;
+  if (cat && mainCategories.some((c) => (c.key || c.slug) === cat)) return cat;
   return null;
 }
 
-/** Build search URL for a subcategory */
 export function subcategorySearchUrl(parentKey, sub) {
   const params = new URLSearchParams();
-  params.set("cat", sub.filterCat || parentKey);
-  params.set("sub", sub.key);
-  params.set("parent", parentKey);
+  params.set('cat', sub.filterCat || parentKey);
+  params.set('sub', sub.key);
+  params.set('parent', parentKey);
   return `/search?${params.toString()}`;
 }

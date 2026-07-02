@@ -8,9 +8,8 @@ import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog';
 import AdminScriptureForm from '../../components/admin/AdminScriptureForm';
 import AdminPageState from '../../components/admin/AdminPageState';
 import { GOLD_TEXT } from '../../constants/adminConstants';
-import { MAIN_CATEGORIES } from '../../data/categories';
+import { useSubcategories, useSaveSubcategory, useCategories } from '../../hooks/useCategories';
 import { useScriptures, useSaveScripture, useDeleteScripture } from '../../hooks/useScriptures';
-import { useSubcategories, useSaveSubcategory } from '../../hooks/useCategories';
 import { getApiError, mapAdminError } from '../../lib/apiError';
 import { mergeSubcategories } from '../../utils/mergeSubcategories';
 import {
@@ -33,6 +32,14 @@ export default function AdminScriptures() {
   } = useScriptures();
 
   const {
+    data: mainCategories = [],
+    isLoading: mainCategoriesLoading,
+    isError: mainCategoriesError,
+    error: mainCategoriesErr,
+    refetch: refetchMainCategories,
+  } = useCategories();
+
+  const {
     data: subcategories = [],
     isLoading: subcategoriesLoading,
     isError: subcategoriesError,
@@ -50,9 +57,9 @@ export default function AdminScriptures() {
   const [modal, setModal] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const isLoading = scripturesLoading || subcategoriesLoading;
-  const isError = scripturesError || subcategoriesError;
-  const errorMessage = getApiError(scripturesErr || subcategoriesErr);
+  const isLoading = scripturesLoading || subcategoriesLoading || mainCategoriesLoading;
+  const isError = scripturesError || subcategoriesError || mainCategoriesError;
+  const errorMessage = getApiError(scripturesErr || subcategoriesErr || mainCategoriesErr);
 
   const allSubs = useMemo(() => mergeSubcategories(subcategories), [subcategories]);
 
@@ -89,6 +96,7 @@ export default function AdminScriptures() {
   function handleRetry() {
     refetchScriptures();
     refetchSubcategories();
+    refetchMainCategories();
   }
 
   function handleSave(form) {
@@ -126,17 +134,19 @@ export default function AdminScriptures() {
 
   function parentLabel(s) {
     const key = resolveScriptureParentKey(s);
-    return MAIN_CATEGORIES.find((c) => c.key === key)?.en || key || '—';
+    const main = mainCategories.find((c) => (c.key || c.id) === key);
+    return main?.label_en || key || '—';
   }
 
   function enrichForForm(s) {
     if (!s || s === 'add') return s;
+    const firstMainKey = mainCategories[0]?.key || mainCategories[0]?.id;
     const parent =
       s.parent_category
       || allSubs.find((c) => c.key === s.subcategory)?.parent_key
-      || MAIN_CATEGORIES.find((m) => m.key === s.category)?.key
+      || mainCategories.find((m) => (m.key || m.id) === s.category)?.key
       || s.category
-      || MAIN_CATEGORIES[0]?.key;
+      || firstMainKey;
     const subKey = s.subcategory || getScriptureSubcategoryKey(s, parent) || '';
     const sub = allSubs.find((c) => c.key === subKey && c.parent_key === parent)
       || allSubs.find((c) => c.key === subKey);
@@ -172,7 +182,9 @@ export default function AdminScriptures() {
             className="form-select"
           >
             <option value="all">All Categories</option>
-            {MAIN_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.en}</option>)}
+            {mainCategories.map((c) => (
+              <option key={c.key || c.id} value={c.key || c.id}>{c.label_en}</option>
+            ))}
           </select>
           <select value={filterSub} onChange={(e) => setFilterSub(e.target.value)} className="form-select">
             <option value="all">All Subcategories</option>
@@ -268,6 +280,7 @@ export default function AdminScriptures() {
           <AdminScriptureForm
             scripture={modal === 'add' ? null : enrichForForm(modal)}
             subcategories={allSubs}
+            mainCategories={mainCategories}
             onSave={handleSave}
             onClose={() => setModal(null)}
             onCreateSubcategory={handleCreateSubcategory}

@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    verification_status: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
     bookmarks: {
       type: [{
         scripture_id: { type: String, required: true },
@@ -54,6 +59,14 @@ const userSchema = new mongoose.Schema(
       notifyDailySloka: { type: Boolean, default: true },
       notifyPanchangam: { type: Boolean, default: false },
     },
+    fcm_tokens: {
+      type: [{
+        token: { type: String, required: true },
+        platform: { type: String, enum: ['android'], default: 'android' },
+        updated_at: { type: Date, default: Date.now },
+      }],
+      default: [],
+    },
   },
   { timestamps: true }
 );
@@ -73,6 +86,7 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
     role: this.role,
     name: this.name,
     username: this.username,
+    verification_status: this.verification_status || 'none',
     logged_in: true,
   };
 };

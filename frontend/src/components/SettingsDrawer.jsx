@@ -187,7 +187,10 @@ export default function SettingsDrawer({ open, onClose }) {
                 </div>
               </Section>
 
-              <Section title="Notifications">
+              <Section title="Notifications (Android app)">
+                <p className="px-5 pb-2 text-scale-xs text-muted">
+                  These preferences apply to the mobile app only. The website does not send push notifications.
+                </p>
                 <ToggleRow icon={Bell} label="Daily sloka" value={settings.notifyDailySloka}
                   onChange={v => update('notifyDailySloka', v)} />
                 <ToggleRow icon={Bell} label="Panchangam" value={settings.notifyPanchangam}

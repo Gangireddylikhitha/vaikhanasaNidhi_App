@@ -7,15 +7,15 @@ export default function AdminConfirmDialog({ message, onYes, onNo, isLoading = f
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         className="corner-card rounded-2xl p-6 w-full max-w-xs shadow-2xl text-center bg-card">
         <p className="text-sm font-semibold text-muted mb-5">{message}</p>
-        <div className="flex gap-3">
+        <div className="modal-actions modal-actions--inline">
           <button type="button" onClick={onNo} disabled={isLoading}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-ghost disabled:opacity-50">
-            Cancel
+            className="modal-btn btn-ghost disabled:opacity-50">
+            <span className="modal-btn-label">Cancel</span>
           </button>
           <button type="button" onClick={onYes} disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50">
-            {isLoading && <Loader2 size={14} className="animate-spin" />}
-            Delete
+            className="modal-btn text-white bg-red-600 hover:bg-red-500 disabled:opacity-50">
+            {isLoading && <Loader2 size={14} className="modal-btn-icon animate-spin" />}
+            <span className="modal-btn-label">Delete</span>
           </button>
         </div>
       </motion.div>

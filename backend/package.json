@@ -12,13 +12,16 @@
     "migrate:audit": "node scripts/migrateFirestore.js --audit",
     "migrate:firestore": "node scripts/migrateFirestore.js",
     "migrate:firestore:dry": "node scripts/migrateFirestore.js --dry-run --limit=5",
-    "migrate:list-databases": "node scripts/listFirestoreDatabases.js"
+    "migrate:list-databases": "node scripts/listFirestoreDatabases.js",
+    "panchangam:prefetch": "node scripts/prefetchPanchangam.js",
+    "panchangam:status": "node scripts/prefetchPanchangam.js --status"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@ishubhamx/panchangam-js": "^2.2.6",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
@@ -28,6 +31,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.0",
     "multer": "^2.2.0",
+    "node-cron": "^4.5.0",
     "nodemon": "^3.1.14"
   }
 }
