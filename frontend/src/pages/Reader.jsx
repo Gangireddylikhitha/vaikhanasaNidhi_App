@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Bookmark, Share2, ZoomIn, ZoomOut, Copy, Check, BookOpen } from "lucide-react";
 import { getCategoryInfo } from "../utils/categoryLookup";
 import { usePublicCategories } from "../hooks/usePublicCategories";
@@ -14,6 +14,7 @@ import { isBookPaginatedScripture } from "../lib/textLayout";
 import BookPageReader from "../components/BookPageReader";
 import BookImageReader from "../components/BookImageReader";
 import BookPdfReader from "../components/BookPdfReader";
+import CompactImageLightbox from "../components/CompactImageLightbox";
 import { toast } from "sonner";
 import { isLoggedIn } from "../store/authStore";
 
@@ -31,8 +32,8 @@ export default function Reader() {
   const [bookmarked, setBookmarked] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [galleryLightbox, setGalleryLightbox] = useState(null);
   const containerRef = useRef(null);
-  const bookReaderRef = useRef(null);
   const lastProgressSave = useRef(0);
 
   const savedProgress = readingProgress.find((p) => p.scripture_id === id);
@@ -272,26 +273,35 @@ export default function Reader() {
             </div>
           )}
 
-          <div ref={bookReaderRef} className={isBookVisualMode ? 'flex-1 min-h-0 px-1.5 pt-1 pb-1.5' : 'mx-3 sm:mx-6 xl:mx-0 mt-4 space-y-4'}>
+          <div className={isBookVisualMode ? 'flex-1 min-h-0 px-1.5 pt-1 pb-1.5' : 'mx-3 sm:mx-6 xl:mx-0 mt-4 space-y-4'}>
             {isGallery ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
                 {(scripture.images || []).map((img, idx) => (
-                  <motion.div
+                  <motion.button
                     key={img.url || idx}
-                    initial={{ opacity: 0, y: 12 }}
+                    type="button"
+                    initial={{ opacity: 0, y: 8 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-40px' }}
-                    transition={{ delay: Math.min(idx * 0.06, 0.3) }}
-                    className="corner-card rounded-2xl overflow-hidden reader-border"
+                    viewport={{ once: true, margin: '-20px' }}
+                    transition={{ delay: Math.min(idx * 0.04, 0.25) }}
+                    onClick={() => setGalleryLightbox(idx)}
+                    className="corner-card rounded-xl overflow-hidden reader-border text-left group"
                   >
-                    <img src={img.url} alt={img.caption || scripture.title_telugu} className="w-full h-auto object-cover" />
+                    <div className="relative overflow-hidden bg-elevated">
+                      <img
+                        src={img.url}
+                        alt={img.caption || scripture.title_telugu}
+                        className="w-full h-[20vh] max-h-28 sm:max-h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all" />
+                    </div>
                     {img.caption && (
-                      <p className="px-4 py-3 text-sm text-muted border-t border-[var(--border-subtle)]"
+                      <p className="px-2 py-1.5 text-[10px] sm:text-xs text-muted truncate border-t border-[var(--border-subtle)]"
                         style={{ fontFamily: 'Tiro Telugu, serif' }}>
                         {img.caption}
                       </p>
                     )}
-                  </motion.div>
+                  </motion.button>
                 ))}
               </div>
             ) : isBookPdfMode ? (
@@ -426,6 +436,19 @@ export default function Reader() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {galleryLightbox != null && isGallery && (
+          <CompactImageLightbox
+            items={(scripture.images || []).map((img) => ({
+              url: img.url,
+              caption: img.caption,
+            }))}
+            index={galleryLightbox}
+            onClose={() => setGalleryLightbox(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

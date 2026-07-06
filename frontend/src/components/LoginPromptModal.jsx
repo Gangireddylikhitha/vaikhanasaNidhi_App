@@ -34,8 +34,11 @@ export default function LoginPromptModal({ open, onClose, onSuccess }) {
   });
 
   const signupMutation = useSignup({
-    onSuccess: () => {
-      toast.success('Account created! Please login.');
+    onSuccess: (_data, variables) => {
+      toast.success('Account created! Please login first, then complete the verification form.');
+      setUsername(variables.username.trim().toLowerCase());
+      setPassword('');
+      setConfirm('');
       setMode('login');
     },
     onError: (err) => toast.error(mapAuthError(err)),

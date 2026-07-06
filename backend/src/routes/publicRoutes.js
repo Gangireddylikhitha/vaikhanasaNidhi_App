@@ -22,6 +22,5 @@ router.get('/scriptures/:id/pdf', publicScriptureController.streamScripturePdf);
 router.get('/scriptures/:id', publicScriptureController.getScripture);
 router.get('/subcategories', publicCategoryController.listSubcategories);
 router.get('/panchangam', panchangamController.getPanchangam);
-router.get('/panchang', panchangamController.getPanchangam);
 
 module.exports = router;

@@ -1,46 +1,12 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Images, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { Images, Loader2 } from 'lucide-react';
 import { useGalleryEvents, useGalleryPhotos, useGallerySubcategories } from '../hooks/useGallery';
+import CompactImageLightbox from '../components/CompactImageLightbox';
 
 const GOLD = 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)';
 const GOLD_DARK = '#8B6200';
 const GOLD_SOLID = '#C88F2D';
-
-function Lightbox({ photos, index, onClose }) {
-  const [cur, setCur] = useState(index);
-  const photo = photos[cur];
-  return (
-    <div className="fixed inset-0 z-50 bg-black/92 flex items-center justify-center p-4"
-      onClick={onClose}>
-      <button onClick={onClose}
-        className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-10">
-        <X size={24} />
-      </button>
-      {cur > 0 && (
-        <button onClick={e => { e.stopPropagation(); setCur(c => c - 1); }}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 bg-black/40 rounded-full z-10">
-          <ChevronLeft size={24} />
-        </button>
-      )}
-      {cur < photos.length - 1 && (
-        <button onClick={e => { e.stopPropagation(); setCur(c => c + 1); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 bg-black/40 rounded-full z-10">
-          <ChevronRight size={24} />
-        </button>
-      )}
-      <div onClick={e => e.stopPropagation()} className="max-w-3xl w-full">
-        <motion.img key={cur} src={photo.url} alt={photo.caption}
-          initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-h-[78vh] object-contain rounded-2xl shadow-2xl" />
-        {photo.caption && (
-          <p className="text-white/80 text-center mt-3 text-sm">{photo.caption}</p>
-        )}
-        <p className="text-white/40 text-center text-xs mt-1">{cur + 1} / {photos.length}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function Gallery() {
   const { data: albums = [], isLoading, isError, refetch } = useGalleryEvents();
@@ -160,23 +126,24 @@ export default function Gallery() {
                 <div className="h-px flex-1" style={{ background: '#E4B24B44' }} />
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                 {album.photos.map((photo, idx) => (
-                  <motion.div key={photo.id}
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.04 }}
-                    className="rounded-2xl overflow-hidden cursor-pointer group shadow-sm bg-white relative"
+                  <button
+                    key={photo.id}
+                    type="button"
+                    className="rounded-xl overflow-hidden cursor-pointer group shadow-sm bg-white relative text-left"
                     style={{ border: '1px solid #E4B24B22' }}
-                    onClick={() => setLightbox({ photos: album.photos, index: idx })}>
-                    <div className="relative overflow-hidden">
+                    onClick={() => setLightbox({ photos: album.photos, index: idx })}
+                  >
+                    <div className="relative overflow-hidden bg-elevated">
                       <img src={photo.url} alt={photo.caption}
-                        className="w-full h-36 sm:h-44 object-cover transition-transform duration-300 group-hover:scale-105" />
+                        className="w-full h-[20vh] max-h-28 sm:max-h-32 object-cover transition-transform duration-300 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all" />
                     </div>
                     {photo.caption && (
-                      <p className="px-2.5 py-2 text-xs text-gray-600 truncate">{photo.caption}</p>
+                      <p className="px-2 py-1.5 text-[10px] text-gray-600 truncate">{photo.caption}</p>
                     )}
-                  </motion.div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -186,8 +153,8 @@ export default function Gallery() {
 
       <AnimatePresence>
         {lightbox && (
-          <Lightbox
-            photos={lightbox.photos}
+          <CompactImageLightbox
+            items={lightbox.photos.map((p) => ({ url: p.url, caption: p.caption }))}
             index={lightbox.index}
             onClose={() => setLightbox(null)}
           />

@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticate, requireAdmin } = require('../middleware/authenticate');
 const adminDashboardController = require('../controllers/adminDashboardController');
+const adminUserController = require('../controllers/adminUserController');
 const adminScriptureController = require('../controllers/adminScriptureController');
 const adminCategoryController = require('../controllers/adminCategoryController');
 const adminGalleryController = require('../controllers/adminGalleryController');
@@ -13,6 +14,7 @@ const router = express.Router();
 router.use(authenticate, requireAdmin);
 
 router.get('/dashboard', adminDashboardController.getDashboard);
+router.get('/users', adminUserController.listUsers);
 
 router.get('/verification', adminVerificationController.listApplications);
 router.get('/verification/:id', adminVerificationController.getApplication);

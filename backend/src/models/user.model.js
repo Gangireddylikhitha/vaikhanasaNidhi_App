@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
       enum: ['none', 'pending', 'approved', 'rejected'],
       default: 'none',
     },
+    last_login_at: {
+      type: Date,
+      default: null,
+    },
     bookmarks: {
       type: [{
         scripture_id: { type: String, required: true },

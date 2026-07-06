@@ -1,40 +1,11 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Tag, Layers, Image, Users, ShieldCheck, Clock, ChevronRight } from 'lucide-react';
+import { BookOpen, Tag, Layers, Image, Users, ShieldCheck, ChevronRight } from 'lucide-react';
 import AdminPageState from '../../components/admin/AdminPageState';
 import { GOLD_SOLID } from '../../constants/adminConstants';
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import { getApiError } from '../../lib/apiError';
 
-const STATUS_STYLES = {
-  none: { bg: '#6b728022', color: '#6b7280', label: 'Not submitted' },
-  pending: { bg: '#d9770622', color: '#d97706', label: 'Pending' },
-  approved: { bg: '#16a34a22', color: '#16a34a', label: 'Approved' },
-  rejected: { bg: '#dc262622', color: '#dc2626', label: 'Rejected' },
-};
-
-function UserStatusBadge({ status }) {
-  const s = STATUS_STYLES[status] || STATUS_STYLES.none;
-  return (
-    <span
-      className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-      style={{ background: s.bg, color: s.color }}
-    >
-      {s.label}
-    </span>
-  );
-}
-
-function formatWhen(date) {
-  if (!date) return '—';
-  return new Date(date).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-export default function AdminDashboard({ onOpenVerifications }) {
+export default function AdminDashboard({ onOpenUsers, onOpenVerifications }) {
   const { data, isLoading, isError, error, refetch } = useAdminDashboard();
 
   return (
@@ -44,14 +15,13 @@ export default function AdminDashboard({ onOpenVerifications }) {
       error={getApiError(error, 'Failed to load dashboard stats.')}
       onRetry={refetch}
     >
-      <DashboardContent data={data} onOpenVerifications={onOpenVerifications} />
+      <DashboardContent data={data} onOpenUsers={onOpenUsers} onOpenVerifications={onOpenVerifications} />
     </AdminPageState>
   );
 }
 
-function DashboardContent({ data, onOpenVerifications }) {
+function DashboardContent({ data, onOpenUsers, onOpenVerifications }) {
   const categoryTotal = (data.byCategory || []).reduce((sum, c) => sum + c.count, 0);
-  const recentUsers = data.recentUsers || [];
 
   const statCards = [
     {
@@ -59,9 +29,10 @@ function DashboardContent({ data, onOpenVerifications }) {
       label: 'Registered Users',
       te: 'నమోదైన వినియోగదారులు',
       value: data.totalUsers ?? 0,
-      detail: 'Who signed up & logged in',
+      detail: 'View all users',
       bg: '#3b82f622',
       color: '#2563eb',
+      action: onOpenUsers,
     },
     {
       icon: ShieldCheck,
@@ -108,6 +79,11 @@ function DashboardContent({ data, onOpenVerifications }) {
         {statCards.map((card, i) => {
           const Icon = card.icon;
           const Wrapper = card.action ? 'button' : 'div';
+          const showActionHint = card.action === onOpenVerifications
+            ? (data.pendingVerifications ?? 0) > 0
+            : card.action === onOpenUsers
+              ? (data.totalUsers ?? 0) > 0
+              : false;
           return (
             <motion.div key={card.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}>
@@ -126,71 +102,15 @@ function DashboardContent({ data, onOpenVerifications }) {
                   <p className="text-[10px] text-muted font-telugu" style={{ fontFamily: 'Tiro Telugu, serif' }}>{card.te}</p>
                 )}
                 {card.detail ? <p className="text-[10px] text-muted-light mt-1">{card.detail}</p> : null}
-                {card.action && (data.pendingVerifications ?? 0) > 0 && (
+                {showActionHint && (
                   <p className="text-[10px] text-[#d97706] mt-2 flex items-center gap-1 font-semibold">
-                    Review now <ChevronRight size={12} />
+                    {card.action === onOpenUsers ? 'View users' : 'Review now'} <ChevronRight size={12} />
                   </p>
                 )}
               </Wrapper>
             </motion.div>
           );
         })}
-      </div>
-
-      <div className="corner-card rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-          <div>
-            <h3 className="font-bold text-sm gold-glow flex items-center gap-2">
-              <Users size={16} /> Recent Logins
-            </h3>
-            <p className="text-[11px] text-muted mt-0.5 font-telugu" style={{ fontFamily: 'Tiro Telugu, serif' }}>
-              లాగిన్ అయిన వినియోగదారులు
-            </p>
-          </div>
-          <span className="text-xs text-muted tabular-nums">{recentUsers.length} shown</span>
-        </div>
-
-        {recentUsers.length === 0 ? (
-          <p className="p-6 text-sm text-muted text-center">No registered users yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wide text-muted border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <th className="px-5 py-3 font-semibold">User</th>
-                  <th className="px-3 py-3 font-semibold hidden sm:table-cell">Username</th>
-                  <th className="px-3 py-3 font-semibold">Verification</th>
-                  <th className="px-3 py-3 font-semibold hidden md:table-cell">Last Login</th>
-                  <th className="px-5 py-3 font-semibold hidden lg:table-cell">Joined</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentUsers.map((user) => (
-                  <tr key={user.id} className="border-b last:border-0 hover:bg-white/[0.02]" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <td className="px-5 py-3">
-                      <p className="font-semibold font-telugu truncate max-w-[140px]" style={{ fontFamily: 'Tiro Telugu, serif' }}>
-                        {user.name}
-                      </p>
-                    </td>
-                    <td className="px-3 py-3 text-muted hidden sm:table-cell">@{user.username}</td>
-                    <td className="px-3 py-3">
-                      <UserStatusBadge status={user.verification_status} />
-                    </td>
-                    <td className="px-3 py-3 text-xs text-muted hidden md:table-cell">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock size={11} />
-                        {formatWhen(user.last_login_at)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-xs text-muted hidden lg:table-cell">
-                      {formatWhen(user.joined_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
 
       <div className="corner-card rounded-2xl p-5">

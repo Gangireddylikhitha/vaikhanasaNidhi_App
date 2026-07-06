@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminHeader from '../components/admin/AdminHeader';
 import AdminDashboard from './adminPages/AdminDashboard';
+import AdminUsers from './adminPages/AdminUsers';
 import AdminScriptures from './adminPages/AdminScriptures';
 import AdminCategories from './adminPages/AdminCategories';
 import AdminGallery from './adminPages/AdminGallery';
@@ -38,7 +39,13 @@ export default function AdminPanel({ onLogout }) {
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              {tab === 'dashboard' && <AdminDashboard />}
+              {tab === 'dashboard' && (
+                <AdminDashboard
+                  onOpenUsers={() => handleTabChange('users')}
+                  onOpenVerifications={() => handleTabChange('verifications')}
+                />
+              )}
+              {tab === 'users' && <AdminUsers />}
               {tab === 'verifications' && <AdminVerifications />}
               {tab === 'scriptures' && <AdminScriptures />}
               {tab === 'gallery' && <AdminGallery />}

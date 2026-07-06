@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Shield, Eye, EyeOff, LogIn, UserPlus, ArrowRight, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,16 +35,17 @@ function Field({ label, children }) {
   );
 }
 
-function SignUpForm({ onSwitch, onDone }) {
+function SignUpForm({ onSwitch, onSignupSuccess }) {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
 
   const signupMutation = useSignup({
-    onSuccess: () => {
-      toast.success('ఖాతా సృష్టించబడింది! ధృవీకరణ ఫారమ్ పూరించండి.');
-      onDone?.();
+    onSuccess: (_data, variables) => {
+      toast.success('ఖాతా సృష్టించబడింది! ముందు లాగిన్ అవ్వండి, తర్వాత ధృవీకరణ ఫారమ్ పూరించండి.');
+      onSignupSuccess?.({ username: variables.username.trim().toLowerCase() });
+      onSwitch('login');
     },
     onError: (err) => toast.error(mapAuthError(err)),
   });
@@ -147,10 +148,14 @@ function ChangePasswordForm({ onBack }) {
   );
 }
 
-function UserLoginForm({ onDone, onSwitch, successMessage }) {
+function UserLoginForm({ onDone, onSwitch, successMessage, initialUsername = '' }) {
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(initialUsername);
   const [pass, setPass] = useState('');
+
+  useEffect(() => {
+    if (initialUsername) setUsername(initialUsername);
+  }, [initialUsername]);
 
   const loginMutation = useLogin({
     onSuccess: () => {
@@ -242,6 +247,7 @@ export default function LoginPage({ onLogin }) {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [tapCount, setTapCount] = useState(0);
   const [loginMessage, setLoginMessage] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
 
   const guestLoginMutation = useGuestLogin({
     onSuccess: () => {
@@ -250,6 +256,11 @@ export default function LoginPage({ onLogin }) {
     },
     onError: (err) => toast.error(mapAuthError(err)),
   });
+
+  function handleSignupSuccess({ username }) {
+    setLoginUsername(username);
+    setLoginMessage('Account created! Please login first, then complete the verification form.');
+  }
 
   function handleModeChange(nextMode) {
     if (nextMode !== 'login') setLoginMessage('');
@@ -323,7 +334,7 @@ export default function LoginPage({ onLogin }) {
                 {mode === 'signup' && (
                   <SignUpForm
                     onSwitch={handleModeChange}
-                    onDone={onLogin}
+                    onSignupSuccess={handleSignupSuccess}
                   />
                 )}
                 {mode === 'login' && (
@@ -331,6 +342,7 @@ export default function LoginPage({ onLogin }) {
                     onDone={onLogin}
                     onSwitch={handleModeChange}
                     successMessage={loginMessage}
+                    initialUsername={loginUsername}
                   />
                 )}
                 {mode === 'admin'  && <AdminLoginForm onDone={onLogin} />}

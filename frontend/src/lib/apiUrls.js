@@ -11,6 +11,7 @@ export const me = '/auth/me';
 export const logout = '/auth/logout';
 
 export const adminDashboard = '/admin/dashboard';
+export const adminUsers = '/admin/users';
 export const adminScriptures = '/admin/scriptures';
 export const adminScriptureById = (id) => `/admin/scriptures/${id}`;
 export const adminCategories = '/admin/categories';

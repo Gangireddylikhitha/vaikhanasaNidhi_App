@@ -23,7 +23,10 @@ function useAuthSessionMutation(mutationFn, options = {}) {
 }
 
 export function useSignup(options) {
-  return useAuthSessionMutation(authApi.signupUser, options);
+  return useCustomMutation({
+    mutationFn: authApi.signupUser,
+    ...options,
+  });
 }
 
 export function useLogin(options) {

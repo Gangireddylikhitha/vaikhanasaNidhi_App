@@ -2,6 +2,7 @@ export const ADMIN_QUERY_KEYS = {
   scriptures: ['admin', 'scriptures'],
   categories: ['admin', 'categories'],
   dashboard: ['admin', 'dashboard'],
+  users: (params) => ['admin', 'users', params],
 };
 
 export function invalidateAdminQueries(queryClient) {

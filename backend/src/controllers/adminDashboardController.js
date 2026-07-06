@@ -22,29 +22,13 @@ function isImageGalleryScripture(s) {
   return s.parent_category === 'chitralu' || s.category === 'chitralu';
 }
 
-function mapRecentUser(user) {
-  return {
-    id: user._id.toString(),
-    name: user.name,
-    username: user.username,
-    verification_status: user.verification_status || 'none',
-    last_login_at: user.last_login_at || null,
-    joined_at: user.createdAt,
-  };
-}
-
 exports.getDashboard = catchAsync(async (req, res) => {
-  const [scriptures, subcategoryCount, totalUsers, pendingVerifications, approvedVerifications, recentUsers] = await Promise.all([
+  const [scriptures, subcategoryCount, totalUsers, pendingVerifications, approvedVerifications] = await Promise.all([
     Scripture.find().lean(),
     countSubcategories(),
     User.countDocuments({ role: 'user' }),
     VerificationApplication.countDocuments({ status: 'pending' }),
     VerificationApplication.countDocuments({ status: 'approved' }),
-    User.find({ role: 'user' })
-      .sort({ last_login_at: -1, createdAt: -1 })
-      .limit(10)
-      .select('name username verification_status last_login_at createdAt')
-      .lean(),
   ]);
 
   const textScriptures = scriptures.filter((s) => !isImageGalleryScripture(s));
@@ -72,6 +56,5 @@ exports.getDashboard = catchAsync(async (req, res) => {
     totalUsers,
     pendingVerifications,
     approvedVerifications,
-    recentUsers: recentUsers.map(mapRecentUser),
   });
 });
