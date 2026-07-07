@@ -4,8 +4,10 @@
   "description": "Vaikhanasa Nidhi App API",
   "main": "src/server.js",
   "scripts": {
-    "start": "node --watch src/server.js",
+    "start": "node src/server.js",
     "start:once": "node src/server.js",
+    "cron:panchangam": "node scripts/cronPanchangam.js",
+    "cron:notifications": "node scripts/cronNotifications.js",
     "dev": "node --watch src/server.js",
     "migrate:split-categories": "node scripts/splitCategoryCollections.js",
     "migrate:prune-categories": "node scripts/pruneExtraCategories.js",

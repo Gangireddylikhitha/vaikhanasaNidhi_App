@@ -26,8 +26,12 @@ async function start() {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`API base: http://localhost:${PORT}/api`);
     console.log('Dashboard API: totalScriptures, totalCategories, totalSubcategories, byCategory (8 bars)');
-    startPanchangamScheduler();
-    startNotificationScheduler();
+    if (process.env.DISABLE_IN_PROCESS_CRON !== 'true') {
+      startPanchangamScheduler();
+      startNotificationScheduler();
+    } else {
+      console.log('[cron] in-process schedulers disabled — using external cron jobs');
+    }
   });
 }
 

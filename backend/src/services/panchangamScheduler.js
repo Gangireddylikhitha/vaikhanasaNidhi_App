@@ -78,4 +78,8 @@ function startPanchangamScheduler() {
   console.log(`[panchangam] Drik scheduler active (daily ~${SYNC_HOUR_IST}:00 IST)`);
 }
 
-module.exports = { startPanchangamScheduler, ensureTodayAndTomorrow };
+module.exports = {
+  startPanchangamScheduler,
+  ensureTodayAndTomorrow,
+  onSchedulerTick,
+};

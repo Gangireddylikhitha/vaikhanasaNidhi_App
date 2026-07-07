@@ -151,5 +151,6 @@ module.exports = {
   sendToTokens,
   notifyDailySloka,
   notifyPanchangam,
+  runScheduledNotifications,
   startNotificationScheduler,
 };

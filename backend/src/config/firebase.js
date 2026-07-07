@@ -15,17 +15,35 @@ function getServiceAccountPath() {
   return path.join(__dirname, '../../firebase-service-account.json');
 }
 
-function initFirebaseAdmin() {
-  if (initialized) return messaging;
+function loadServiceAccount() {
+  const jsonEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (jsonEnv) {
+    try {
+      return JSON.parse(jsonEnv);
+    } catch (err) {
+      console.warn('[firebase] FIREBASE_SERVICE_ACCOUNT_JSON parse failed:', err.message);
+      return null;
+    }
+  }
 
   const serviceAccountPath = getServiceAccountPath();
   if (!fs.existsSync(serviceAccountPath)) {
     return null;
   }
 
+  // eslint-disable-next-line import/no-dynamic-require, global-require
+  return require(serviceAccountPath);
+}
+
+function initFirebaseAdmin() {
+  if (initialized) return messaging;
+
+  const serviceAccount = loadServiceAccount();
+  if (!serviceAccount) {
+    return null;
+  }
+
   try {
-    // eslint-disable-next-line import/no-dynamic-require, global-require
-    const serviceAccount = require(serviceAccountPath);
     // eslint-disable-next-line global-require
     admin = require('firebase-admin');
 
