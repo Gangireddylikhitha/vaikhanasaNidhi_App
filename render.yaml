@@ -27,8 +27,9 @@ services:
         generateValue: true
       - key: DISABLE_IN_PROCESS_CRON
         value: "true"
+      # Optional — leave empty until Android push is configured
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
-        sync: false
+        value: ""
 
   - type: cron
     name: vaikhanasa-panchangam-cron
@@ -63,11 +64,7 @@ services:
           name: vaikhanasa-nidhi-api
           type: web
           envVarKey: MONGODB_URI
-      - key: FIREBASE_SERVICE_ACCOUNT_JSON
-        fromService:
-          name: vaikhanasa-nidhi-api
-          type: web
-          envVarKey: FIREBASE_SERVICE_ACCOUNT_JSON
+      # Firebase optional — cron exits cleanly when not configured
       - key: NOTIFICATION_HOUR_IST
         value: "6"
       - key: ANDROID_NOTIFICATION_CHANNEL_ID
