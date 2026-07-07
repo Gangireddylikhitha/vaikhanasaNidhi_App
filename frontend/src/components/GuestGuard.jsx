@@ -13,7 +13,9 @@ export default function GuestGuard({ children }) {
     if (isGuest()) requireLogin(returnTo);
   }, [requireLogin, returnTo]);
 
-  if (isGuest()) return <Navigate to="/" replace />;
+  // Keep the requested route mounted so login can continue to
+  // the correct destination after the modal succeeds.
+  if (isGuest()) return null;
 
   if (isRegisteredUser() && !isVerifiedUser()) {
     return <Navigate to="/verification" replace state={{ returnTo }} />;
