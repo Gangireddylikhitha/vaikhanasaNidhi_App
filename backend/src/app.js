@@ -7,6 +7,11 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+// Respond immediately for Render health checks (before DB is ready)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'vaikhanasa-nidhi-api' });
+});
+
 const defaultOrigin = 'http://localhost:5173';
 const allowedOrigins = (process.env.CLIENT_ORIGIN || defaultOrigin)
   .split(',')

@@ -16,23 +16,26 @@ async function start() {
     process.exit(1);
   }
 
+  await new Promise((resolve, reject) => {
+    app.listen(PORT, '0.0.0.0', (err) => (err ? reject(err) : resolve()));
+  });
+
+  console.log(`Server running on port ${PORT}`);
+  console.log(`API base: http://localhost:${PORT}/api`);
+
   await connectDatabase();
   await seedAdminUser();
   await seedDefaultCategories();
   await seedDefaultSubcategories();
   await seedDefaultGalleryEvents();
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`API base: http://localhost:${PORT}/api`);
-    console.log('Dashboard API: totalScriptures, totalCategories, totalSubcategories, byCategory (8 bars)');
-    if (process.env.DISABLE_IN_PROCESS_CRON !== 'true') {
-      startPanchangamScheduler();
-      startNotificationScheduler();
-    } else {
-      console.log('[cron] in-process schedulers disabled — using external cron jobs');
-    }
-  });
+  console.log('Database connected and seeds complete');
+  if (process.env.DISABLE_IN_PROCESS_CRON !== 'true') {
+    startPanchangamScheduler();
+    startNotificationScheduler();
+  } else {
+    console.log('[cron] in-process schedulers disabled — using external cron jobs');
+  }
 }
 
 start().catch(err => {

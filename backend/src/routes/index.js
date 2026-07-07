@@ -13,8 +13,4 @@ router.use('/users', userRoutes);
 router.use('/internal/cron', cronRoutes);
 router.use('/', publicRoutes);
 
-router.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'vaikhanasa-nidhi-api' });
-});
-
 module.exports = router;
