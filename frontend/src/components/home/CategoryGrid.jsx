@@ -50,6 +50,7 @@ function CategoryGrid() {
           <p className="text-scale-sm mt-1 text-muted">Sacred pathways to eternal knowledge</p>
         </div>
         <GuestNavLink to="/categories" className="view-all-btn flex-shrink-0">
+        
           View All <ChevronRight size={13} />
         </GuestNavLink>
       </div>
