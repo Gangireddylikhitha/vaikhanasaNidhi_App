@@ -51,7 +51,7 @@ body {
   background: var(--bg-page);
   color: var(--text-body);
   margin: 0;
-  padding: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   min-height: 100dvh;
   overflow-x: hidden;
   width: 100%;
@@ -63,6 +63,69 @@ body {
 }
 
 #root { min-height: 100dvh; background: transparent; }
+
+/* Native app — full-screen auth/onboarding shells */
+.native-app .onboarding-inner,
+.native-app .login-panel {
+  max-width: 100%;
+}
+
+.native-app .onboarding-card,
+.native-app .login-card {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+.native-app .login-shell {
+  justify-content: stretch;
+}
+
+.native-app .login-panel {
+  justify-content: stretch;
+}
+
+.native-app .login-brand {
+  flex-shrink: 0;
+}
+
+.native-app .login-guest-btn {
+  margin-top: auto;
+  max-width: none;
+  width: calc(100% - 2.5rem);
+  align-self: center;
+}
+
+.safe-top-offset {
+  top: max(1rem, env(safe-area-inset-top));
+}
+
+.safe-bottom-offset {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+  .native-app .onboarding-card,
+  .native-app .login-card {
+    border-radius: 1.5rem;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .native-app .login-shell {
+    justify-content: center;
+  }
+
+  .native-app .login-panel {
+    justify-content: center;
+    max-width: 28rem;
+  }
+
+  .native-app .login-guest-btn {
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
 
 button, input, textarea, select { font: inherit; }
 img { max-width: 100%; display: block; }
@@ -701,6 +764,71 @@ img { max-width: 100%; display: block; }
   z-index: 5;
 }
 
+/* Home page footer — Vaamira Origins branding */
+.home-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.home-footer-inner {
+  width: 100%;
+  max-width: 18rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 0 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .home-footer-inner {
+    max-width: 22rem;
+    padding: 1.25rem 0 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-footer-inner {
+    max-width: 26rem;
+  }
+}
+
+.home-footer-logo {
+  width: 85%;
+  max-width: 85%;
+  height: auto;
+  min-height: 3rem;
+  object-fit: contain;
+  opacity: 0.92;
+  filter: drop-shadow(0 2px 8px rgba(200, 143, 45, 0.15));
+}
+
+[data-theme="light"] .home-footer-logo {
+  filter: drop-shadow(0 2px 10px rgba(200, 143, 45, 0.22));
+}
+
+.home-footer-text {
+  margin-top: 0.4rem;
+  text-align: center;
+  font-size: clamp(0.68rem, 1.9vw, 0.8rem);
+  line-height: 1.45;
+  color: rgba(245, 245, 245, 0.78);
+}
+
+.home-footer-credit {
+  margin-top: 0.12rem;
+  color: rgba(228, 178, 75, 0.88);
+}
+
+[data-theme="light"] .home-footer-text {
+  color: rgba(30, 30, 30, 0.76);
+}
+
+[data-theme="light"] .home-footer-credit {
+  color: rgba(140, 48, 74, 0.86);
+}
+
 /* ── Hero card — reference layout (text overlaps image) ── */
 .hero-card {
   filter:
@@ -1064,6 +1192,11 @@ img { max-width: 100%; display: block; }
 }
 .hero-mantra:hover { opacity: 0.92; }
 
+[data-theme="light"] .hero-mantra {
+  color: #000000;
+  text-shadow: none;
+}
+
 .hero-meaning-block {
   margin-bottom: 0.25rem;
 }
@@ -1071,6 +1204,11 @@ img { max-width: 100%; display: block; }
 .hero-meaning {
   font-size: clamp(0.65rem, 1.6vw, 0.875rem);
   line-height: 1.65;
+}
+
+[data-theme="light"] .hero-meaning {
+  color: #1f1f1f;
+  text-shadow: 0 1px 1px rgba(228, 178, 75, 0.32);
 }
 
 .hero-meaning-collapsed {
@@ -1096,6 +1234,11 @@ img { max-width: 100%; display: block; }
   transition: opacity 0.2s;
 }
 .hero-more-btn:hover { opacity: 1; }
+
+[data-theme="light"] .hero-more-btn {
+  color: #1f1f1f;
+  text-shadow: 0 1px 1px rgba(228, 178, 75, 0.25);
+}
 
 .hero-cta {
   display: inline-flex;

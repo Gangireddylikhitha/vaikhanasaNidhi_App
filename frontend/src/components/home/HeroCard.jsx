@@ -55,7 +55,7 @@ export default function HeroCard() {
             </div>
 
             <h1
-              className="hero-mantra font-telugu gold-glow-strong"
+              className="hero-mantra font-telugu"
               style={{ fontFamily: "Tiro Telugu, serif" }}
               onClick={() => setOpen(true)}
               role="button"

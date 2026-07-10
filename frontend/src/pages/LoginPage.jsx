@@ -280,16 +280,20 @@ export default function LoginPage({ onLogin }) {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 page-bg relative"
+    <div className="login-shell min-h-dvh flex flex-col page-bg relative sm:items-center sm:justify-center sm:p-4"
       style={{ backgroundImage: 'var(--hero-glow)' }}>
 
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 safe-top-offset">
         <ThemeToggle />
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="login-panel w-full flex-1 flex flex-col justify-center max-w-md mx-auto px-0 sm:px-0 sm:flex-none"
+      >
 
-        <div className="flex flex-col items-center mb-7 gap-3">
+        <div className="login-brand flex flex-col items-center mb-5 sm:mb-7 gap-3 px-5 pt-4 sm:px-0 sm:pt-0">
           <button onClick={handleLogoTap}
             className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden select-none focus:outline-none active:scale-95 transition-transform corner-card"
             style={{ boxShadow: '0 0 30px rgba(200,143,45,0.3)' }}>
@@ -312,7 +316,7 @@ export default function LoginPage({ onLogin }) {
           </div>
         </div>
 
-        <div className="corner-card rounded-3xl overflow-hidden bg-card" style={{ border: '1px solid var(--border-subtle)' }}>
+        <div className="login-card corner-card overflow-hidden bg-card flex-1 flex flex-col min-h-0 sm:flex-none sm:rounded-3xl" style={{ border: '1px solid var(--border-subtle)' }}>
           <div className="flex bg-elevated" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
             {tabs.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => handleModeChange(id)}
@@ -326,7 +330,7 @@ export default function LoginPage({ onLogin }) {
             ))}
           </div>
 
-          <div className="p-7 bg-card">
+          <div className="p-5 sm:p-7 bg-card flex-1 overflow-y-auto">
             <AnimatePresence mode="wait">
               <motion.div key={mode}
                 initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
@@ -352,7 +356,7 @@ export default function LoginPage({ onLogin }) {
         </div>
 
         <button onClick={() => guestLoginMutation.mutate()} disabled={guestLoginMutation.isPending}
-          className="w-full flex items-center justify-center gap-2 mt-4 py-3.5 rounded-2xl text-sm font-semibold btn-ghost active:scale-95 disabled:opacity-60">
+          className="login-guest-btn w-full flex items-center justify-center gap-2 mt-4 py-3.5 rounded-2xl text-sm font-semibold btn-ghost active:scale-95 disabled:opacity-60 mx-5 sm:mx-0 mb-5 sm:mb-0 safe-bottom-offset">
           {guestLoginMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
           {guestLoginMutation.isPending ? 'Please wait...' : 'Continue without Login'}
         </button>

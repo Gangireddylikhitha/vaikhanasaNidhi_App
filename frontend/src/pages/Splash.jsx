@@ -20,7 +20,7 @@ export default function Splash({ onDone }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden page-bg"
+          className="splash-shell fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden page-bg h-dvh"
           style={{ backgroundImage: "var(--hero-glow)" }}
         >
           <div className="absolute top-4 right-4 z-20">

@@ -18,14 +18,26 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || defaultOrigin)
   .map((value) => value.trim())
   .filter(Boolean);
 
+const capacitorOrigins = new Set([
+  'https://localhost',
+  'http://localhost',
+  'capacitor://localhost',
+]);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (capacitorOrigins.has(origin)) return true;
+  // Vite may use 5174, 5175, etc. when 5173 is busy
+  if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
 app.use(cors({
   origin(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Vite may use 5174, 5175, etc. when 5173 is busy
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) {
-      return callback(null, true);
-    }
+    if (isAllowedOrigin(origin)) return callback(null, true);
     return callback(new Error(`CORS blocked origin: ${origin}`));
   },
   credentials: true,

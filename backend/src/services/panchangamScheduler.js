@@ -11,6 +11,7 @@ const SYNC_HOUR_IST = Number(process.env.PANCHANGAM_SYNC_HOUR_IST) || 5;
 const PREFETCH_PER_NIGHT = Number(process.env.PANCHANGAM_PREFETCH_PER_NIGHT) || 8;
 const PREFETCH_YEAR = process.env.PANCHANGAM_PREFETCH_YEAR;
 let lastDailySyncDate = null;
+let schedulerTickInFlight = false;
 
 function getIstHour() {
   const now = new Date();
@@ -49,12 +50,18 @@ async function runHourlyRetry() {
 }
 
 async function onSchedulerTick() {
+  if (schedulerTickInFlight) return;
+  schedulerTickInFlight = true;
   const istHour = getIstHour();
-  if (istHour === SYNC_HOUR_IST) {
-    await runDailySync();
-    return;
+  try {
+    if (istHour === SYNC_HOUR_IST) {
+      await runDailySync();
+      return;
+    }
+    await runHourlyRetry();
+  } finally {
+    schedulerTickInFlight = false;
   }
-  await runHourlyRetry();
 }
 
 function startPanchangamScheduler() {
@@ -62,6 +69,9 @@ function startPanchangamScheduler() {
     onSchedulerTick().catch((err) => {
       console.warn('[panchangam] scheduler error:', err.message);
     });
+  }, {
+    timezone: 'Asia/Kolkata',
+    noOverlap: true,
   });
 
   ensureTodayAndTomorrow()

@@ -8,6 +8,7 @@ const NOTIFICATION_HOUR = Number(process.env.NOTIFICATION_HOUR_IST) || 6;
 const ANDROID_CHANNEL_ID = process.env.ANDROID_NOTIFICATION_CHANNEL_ID || 'vaikhanasa_daily';
 let lastSlokaDate = null;
 let lastPanchangamDate = null;
+let notificationTickInFlight = false;
 
 function collectAndroidTokens(users) {
   return users.flatMap((u) => (u.fcm_tokens || [])
@@ -139,9 +140,16 @@ function startNotificationScheduler() {
   }
 
   cron.schedule('0 * * * *', () => {
+    if (notificationTickInFlight) return;
+    notificationTickInFlight = true;
     runScheduledNotifications().catch((err) => {
       console.warn('[notifications] scheduler error:', err.message);
+    }).finally(() => {
+      notificationTickInFlight = false;
     });
+  }, {
+    timezone: 'Asia/Kolkata',
+    noOverlap: true,
   });
 
   console.log(`[notifications] Android scheduler active (daily ~${NOTIFICATION_HOUR}:00 IST)`);

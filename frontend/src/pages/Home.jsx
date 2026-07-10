@@ -17,11 +17,15 @@ import { isImageProgressItem } from "../utils/scriptureSubcategoryMatch";
 
 import { isLoggedIn, isGuest } from "../store/authStore";
 import GuestNavLink from "../components/GuestNavLink";
+import { useThemeMode } from "../hooks/useThemeMode";
+import vaamira from "../assets/images/vaamira.png";
+import lightVaamira from "../assets/images/lightVaamira.png";
 
 const GOLD = "#E4B24B";
 
 export default function Home() {
   const [, forceUpdate] = useState(0);
+  const { themeMode } = useThemeMode();
   const guest = isGuest();
   const { data: dailySloka, refetch: refetchSloka } = useDailySloka();
   const { data: publicStats } = usePublicStats();
@@ -233,6 +237,19 @@ export default function Home() {
           </motion.div>
         </section>
       )}
+
+      <footer className="home-footer px-4 sm:px-6 lg:px-8 mt-10 mb-6">
+        <div className="home-footer-inner">
+          <img
+            src={themeMode === "light" ? lightVaamira : vaamira}
+            alt="Vaamira Origins"
+            className="home-footer-logo"
+            loading="lazy"
+          />
+          <p className="home-footer-text">© 2026 Vaikhanasa Nidhi. All Rights Reserved.</p>
+          <p className="home-footer-text home-footer-credit">Designed & Developed by vaamira origins</p>
+        </div>
+      </footer>
     </div>
   );
 }
