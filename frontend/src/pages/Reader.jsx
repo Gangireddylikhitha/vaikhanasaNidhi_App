@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Bookmark, Share2, ZoomIn, ZoomOut, Copy, Check, BookOpen } from "lucide-react";
 import { getCategoryInfo } from "../utils/categoryLookup";
@@ -189,8 +189,8 @@ export default function Reader() {
           animate={{ width: scrollProgress + "%" }} transition={{ duration: 0.15 }} />
       </div>
 
-      <div className={`sticky top-0 z-40 mx-3 sm:mx-6 ${isBookVisualMode ? 'mt-1' : 'mt-3'} lg:top-16`}>
-        <div className="corner-card rounded-2xl px-3 py-2.5 flex items-center gap-2 backdrop-blur-md"
+      <div className={`sticky top-0 z-40 mx-3 sm:mx-6 ${isBookVisualMode ? 'mt-2 mb-1' : 'mt-3'} lg:top-16`}>
+        <div className={`corner-card ${isBookVisualMode ? 'rounded-xl' : 'rounded-2xl'} px-3 py-2.5 flex items-center gap-2 backdrop-blur-md`}
           style={{ background: 'var(--bg-nav)' }}>
           <button onClick={() => navigate(-1)}
             className="p-2 rounded-xl hover:bg-white/5 text-muted hover:text-white flex-shrink-0 transition-colors">
@@ -198,7 +198,7 @@ export default function Reader() {
           </button>
           <span className="flex-1 font-telugu text-sm sm:text-base font-semibold truncate gold-glow"
             style={{ fontFamily: "Tiro Telugu, serif" }}>
-            {scripture.title_telugu}
+            {scripture.title_english || scripture.title_telugu}
           </span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {!isBookImageMode && !isBookPdfMode && (
@@ -416,7 +416,7 @@ export default function Reader() {
               {related.map(s => {
                 const rc = getCategoryInfo(s.category, mainCategories);
                 return (
-                  <a key={s.id} href={"/read/" + s.id}
+                  <Link key={s.id} to={"/read/" + s.id}
                     className="corner-card rounded-2xl overflow-hidden hover:brightness-110 transition-all flex">
                     <div className="w-1 flex-shrink-0" style={{ background: 'linear-gradient(180deg, #C88F2D, #E4B24B)' }} />
                     <div className="p-3 flex-1 min-w-0">
@@ -429,7 +429,7 @@ export default function Reader() {
                     <div className="flex items-center pr-3">
                       <BookOpen size={14} className="text-muted" />
                     </div>
-                  </a>
+                  </Link>
                 );
               })}
             </div>

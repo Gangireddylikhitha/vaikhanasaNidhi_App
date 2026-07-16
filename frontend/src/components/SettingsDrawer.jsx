@@ -195,6 +195,8 @@ export default function SettingsDrawer({ open, onClose }) {
                   onChange={v => update('notifyDailySloka', v)} />
                 <ToggleRow icon={Bell} label="Panchangam" value={settings.notifyPanchangam}
                   onChange={v => update('notifyPanchangam', v)} />
+                <ToggleRow icon={Bell} label="New uploads" value={settings.notifyNewContent !== false}
+                  onChange={v => update('notifyNewContent', v)} />
               </Section>
 
               <Section title="About">

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
+import { isNativeApp } from './lib/native';
 import Layout from './components/Layout';
 import AppToaster from './components/AppToaster';
 import Splash from './pages/Splash';
@@ -20,6 +21,8 @@ import ContactPage from './pages/ContactPage';
 import VerificationPage from './pages/VerificationPage';
 import LoginPage from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
+import SahasranamamTodayPage from './pages/SahasranamamTodayPage';
+import SahasranamamAllPage from './pages/SahasranamamAllPage';
 import { hasSeenOnboarding, getSettings } from './store/useAppStore';
 import { isLoggedIn, isAdmin, isRegisteredUser, isVerifiedUser } from './store/authStore';
 import { applyTheme } from './lib/theme';
@@ -28,6 +31,8 @@ import { useLogout } from './hooks/useAuth';
 import { LoginPromptProvider } from './context/LoginPromptContext';
 import GuestGuard from './components/GuestGuard';
 import VerificationGuard from './components/VerificationGuard';
+import NativeBackBridge from './components/NativeBackBridge';
+import PushNavBridge from './components/PushNavBridge';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +45,9 @@ const queryClient = new QueryClient({
 
 function PageWrapper({ children }) {
   const location = useLocation();
+  if (isNativeApp()) {
+    return <div className="w-full min-h-full">{children}</div>;
+  }
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -48,6 +56,7 @@ function PageWrapper({ children }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.2 }}
+        className="w-full min-h-full"
       >
         {children}
       </motion.div>
@@ -65,7 +74,7 @@ function AppContent() {
 
   function afterSplash() {
     if (isLoggedIn()) {
-      setPhase(isAdmin() ? 'admin' : 'app');
+      setPhase('app');
     } else if (hasSeenOnboarding()) {
       setPhase('login');
     } else {
@@ -74,11 +83,10 @@ function AppContent() {
   }
 
   function handleLogin() {
-    if (isAdmin()) {
-      setPhase('admin');
-      return;
-    }
-    if (isRegisteredUser() && !isVerifiedUser()) {
+    // Admins share the same session as regular users: they land in the app
+    // and can open the admin panel from the menu. Only registered (non-admin)
+    // users are steered to the verification flow.
+    if (!isAdmin() && isRegisteredUser() && !isVerifiedUser()) {
       sessionStorage.setItem('post-login-verification', '1');
     }
     setPhase('app');
@@ -100,15 +108,6 @@ function AppContent() {
       </>
     );
   }
-  if (phase === 'admin') {
-    return (
-      <>
-        <AdminPanel onLogout={handleLogout} />
-        <AppToaster />
-      </>
-    );
-  }
-
   return (
     <BrowserRouter>
       <LoginPromptProvider>
@@ -152,26 +151,51 @@ function Guarded({ children }) {
   );
 }
 
-function AppRoutes({ onLogout }) {
+function AdminGuard({ children }) {
+  if (!isAdmin()) return <Navigate to="/" replace />;
+  return children;
+}
+
+function UserLayoutRoute({ onLogout }) {
   return (
     <Layout onLogout={onLogout}>
+      <NativeBackBridge />
+      <PushNavBridge />
       <PostLoginVerificationRedirect />
       <PageWrapper>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/verification" element={<VerificationPage />} />
-          <Route path="/read/:id" element={<Guarded><Reader /></Guarded>} />
-          <Route path="/search" element={<Guarded><SearchPage /></Guarded>} />
-          <Route path="/bookmarks" element={<Guarded><Bookmarks /></Guarded>} />
-          <Route path="/panchangam" element={<Guarded><Panchangam /></Guarded>} />
-          <Route path="/profile" element={<Guarded><Profile /></Guarded>} />
-          <Route path="/categories" element={<Guarded><CategoriesPage /></Guarded>} />
-          <Route path="/categories/:categoryKey" element={<Guarded><SubcategoryPage /></Guarded>} />
-          <Route path="/gallery" element={<Guarded><Gallery /></Guarded>} />
-          <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
-          <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
-        </Routes>
+        <Outlet />
       </PageWrapper>
     </Layout>
+  );
+}
+
+function AppRoutes({ onLogout }) {
+  return (
+    <Routes>
+      <Route
+        path="/admin"
+        element={(
+          <AdminGuard>
+            <AdminPanel onLogout={onLogout} />
+          </AdminGuard>
+        )}
+      />
+      <Route element={<UserLayoutRoute onLogout={onLogout} />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/sahasranamam" element={<SahasranamamAllPage />} />
+        <Route path="/sahasranamam/today" element={<SahasranamamTodayPage />} />
+        <Route path="/verification" element={<VerificationPage />} />
+        <Route path="/read/:id" element={<Guarded><Reader /></Guarded>} />
+        <Route path="/search" element={<Guarded><SearchPage /></Guarded>} />
+        <Route path="/bookmarks" element={<Guarded><Bookmarks /></Guarded>} />
+        <Route path="/panchangam" element={<Guarded><Panchangam /></Guarded>} />
+        <Route path="/profile" element={<Guarded><Profile /></Guarded>} />
+        <Route path="/categories" element={<Guarded><CategoriesPage /></Guarded>} />
+        <Route path="/categories/:categoryKey" element={<Guarded><SubcategoryPage /></Guarded>} />
+        <Route path="/gallery" element={<Guarded><Gallery /></Guarded>} />
+        <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
+        <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
+      </Route>
+    </Routes>
   );
 }

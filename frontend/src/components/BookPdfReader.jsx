@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import axiosInstance from '../lib/axiosInstance';
 import { scripturePdf } from '../lib/apiUrls';
 import BookVisualReaderLayout from './BookVisualReaderLayout';
+import { brandLogo } from '../constants/brandAssets';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -11,13 +11,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 const RENDER_SCALE = 2;
+const PRELOAD_RADIUS = 3;
 
 async function fetchPdfArrayBuffer(pdfUrl, scriptureId) {
   try {
     const direct = await fetch(pdfUrl, { mode: 'cors' });
-    if (direct.ok) {
-      return direct.arrayBuffer();
-    }
+    if (direct.ok) return direct.arrayBuffer();
   } catch {
     // Cloudinary raw PDFs often block cross-origin fetch — use API proxy
   }
@@ -29,6 +28,17 @@ async function fetchPdfArrayBuffer(pdfUrl, scriptureId) {
   return data;
 }
 
+async function renderPdfPage(pdfDoc, pageNumber, scale) {
+  const page = await pdfDoc.getPage(pageNumber);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  canvas.width = Math.floor(viewport.width);
+  canvas.height = Math.floor(viewport.height);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  return canvas.toDataURL('image/jpeg', 0.88);
+}
+
 export default function BookPdfReader({
   scripture,
   pdfUrl,
@@ -38,13 +48,12 @@ export default function BookPdfReader({
 }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [pageIdx, setPageIdx] = useState(() => Math.max(0, initialPage));
-  const [pageSrc, setPageSrc] = useState('');
+  const [pageSrcs, setPageSrcs] = useState({});
   const [loading, setLoading] = useState(true);
-  const [rendering, setRendering] = useState(false);
   const [error, setError] = useState('');
-  const [zoom, setZoom] = useState(1.25);
-  const [direction, setDirection] = useState(0);
   const pageIdxRef = useRef(pageIdx);
+  const renderingRef = useRef(new Set());
+  const loadedRef = useRef(new Set());
 
   const totalPages = pdfDoc?.numPages || pageCount || 1;
 
@@ -54,7 +63,6 @@ export default function BookPdfReader({
 
   useEffect(() => {
     setPageIdx(Math.min(Math.max(0, initialPage), Math.max(0, totalPages - 1)));
-    setZoom(1.25);
   }, [initialPage, totalPages, scripture?.id]);
 
   useEffect(() => {
@@ -62,7 +70,7 @@ export default function BookPdfReader({
     if (!url) {
       setLoading(false);
       setPdfDoc(null);
-      setPageSrc('');
+      setPageSrcs({});
       setError('No PDF file linked to this book. Re-import using PDF book mode in admin.');
       return undefined;
     }
@@ -71,7 +79,9 @@ export default function BookPdfReader({
     setLoading(true);
     setError('');
     setPdfDoc(null);
-    setPageSrc('');
+    setPageSrcs({});
+    renderingRef.current = new Set();
+    loadedRef.current = new Set();
 
     (async () => {
       try {
@@ -92,58 +102,66 @@ export default function BookPdfReader({
     return () => { cancelled = true; };
   }, [pdfUrl, scripture?.id]);
 
+  // Lazy-render pages around the visible page (CSS handles zoom — no re-render on zoom)
   useEffect(() => {
     if (!pdfDoc) return undefined;
     let cancelled = false;
-    setRendering(true);
-    setError('');
 
-    (async () => {
+    async function ensurePage(i) {
+      if (i < 0 || i >= pdfDoc.numPages) return;
+      if (loadedRef.current.has(i) || renderingRef.current.has(i)) return;
+      renderingRef.current.add(i);
       try {
-        const page = await pdfDoc.getPage(pageIdx + 1);
-        const viewport = page.getViewport({ scale: RENDER_SCALE * zoom });
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        canvas.width = Math.floor(viewport.width);
-        canvas.height = Math.floor(viewport.height);
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        const src = await renderPdfPage(pdfDoc, i + 1, RENDER_SCALE);
         if (!cancelled) {
-          setPageSrc(canvas.toDataURL('image/jpeg', 0.9));
-          setRendering(false);
+          loadedRef.current.add(i);
+          setPageSrcs((prev) => (prev[i] ? prev : { ...prev, [i]: src }));
         }
       } catch {
-        if (!cancelled) {
-          setError('Could not render this page.');
-          setRendering(false);
-        }
+        // ignore single-page render errors
+      } finally {
+        renderingRef.current.delete(i);
       }
-    })();
+    }
+
+    const center = pageIdx;
+    const jobs = [];
+    for (let d = 0; d <= PRELOAD_RADIUS; d += 1) {
+      jobs.push(ensurePage(center + d));
+      if (d > 0) jobs.push(ensurePage(center - d));
+    }
+    if (center <= 2) {
+      for (let i = 0; i < Math.min(6, pdfDoc.numPages); i += 1) jobs.push(ensurePage(i));
+    }
+    Promise.all(jobs);
 
     return () => { cancelled = true; };
-  }, [pdfDoc, pageIdx, zoom]);
+  }, [pdfDoc, pageIdx]);
 
-  const goTo = useCallback((idx) => {
+  const reportPage = useCallback((idx) => {
     const next = Math.min(Math.max(0, idx), totalPages - 1);
-    const prev = pageIdxRef.current;
-    setDirection(next > prev ? 1 : next < prev ? -1 : 0);
+    if (next === pageIdxRef.current) return;
     setPageIdx(next);
     const pct = totalPages > 1 ? Math.round((next / (totalPages - 1)) * 100) : 100;
     onProgress?.(pct, next);
   }, [totalPages, onProgress]);
 
-  useEffect(() => {
-    function onKey(e) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goTo(pageIdx - 1);
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(pageIdx + 1);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [pageIdx, goTo]);
+  const goTo = useCallback((idx) => {
+    reportPage(idx);
+  }, [reportPage]);
 
-  if (error && !pageSrc) {
+  if (error && !pdfDoc) {
     return (
       <p className="text-center text-red-400 text-sm py-12 px-4">{error}</p>
+    );
+  }
+
+  if (loading && !pdfDoc) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-16 w-full">
+        <img src={brandLogo} alt="" className="brand-loader" width={56} height={56} />
+        <p className="text-xs text-muted">Loading PDF…</p>
+      </div>
     );
   }
 
@@ -152,28 +170,26 @@ export default function BookPdfReader({
       scripture={scripture}
       pageIdx={pageIdx}
       totalPages={totalPages}
-      loading={loading || rendering}
-      direction={direction}
+      loading={loading}
       onGoTo={goTo}
-      zoom={zoom}
-      onZoomIn={() => setZoom((z) => Math.min(2.5, z + 0.15))}
-      onZoomOut={() => setZoom((z) => Math.max(0.75, z - 0.15))}
-      onZoomReset={() => setZoom(1)}
+      onVisiblePage={reportPage}
     >
-      {(loading || rendering) && (
-        <div className="flex flex-col items-center gap-2 py-16 w-full">
-          <Loader2 size={28} className="animate-spin" style={{ color: '#C88F2D' }} />
-          <p className="text-xs text-muted">{loading ? 'Loading PDF…' : 'Rendering page…'}</p>
-        </div>
-      )}
-      {!loading && !rendering && pageSrc && (
-        <img
-          src={pageSrc}
-          alt={`${scripture.title_telugu} — page ${pageIdx + 1}`}
-          className="book-image-page-img book-swipe-page-img"
-          draggable={false}
-        />
-      )}
+      {Array.from({ length: totalPages }, (_, i) => (
+        pageSrcs[i] ? (
+          <img
+            key={`pdf-${i}`}
+            src={pageSrcs[i]}
+            alt={`${scripture.title_telugu} — page ${i + 1}`}
+            className="book-scroll-page-img"
+            draggable={false}
+          />
+        ) : (
+          <div key={`pdf-ph-${i}`} className="book-scroll-page-placeholder">
+            <img src={brandLogo} alt="" className="brand-loader brand-loader--sm" width={32} height={32} />
+            <span className="text-xs text-muted tabular-nums">Page {i + 1}</span>
+          </div>
+        )
+      ))}
     </BookVisualReaderLayout>
   );
 }

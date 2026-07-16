@@ -21,6 +21,19 @@ export function getDailySahasranamaIndex() {
   return getDailyIndex() + 1;
 }
 
+/** Full payload for UI — sourced only from frontend static `sahasraNamalu.js` */
+export function getTodayDailySloka() {
+  const index = getDailyIndex();
+  const sloka = VISHNU_SAHASRANAMA_SLOKAS[index];
+  return {
+    telugu: sloka.telugu,
+    meaning: sloka.meaning,
+    source: sloka.source,
+    index: index + 1,
+    total: VISHNU_SAHASRANAMA_SLOKAS.length,
+  };
+}
+
 /** Milliseconds until next local midnight */
 export function msUntilMidnight() {
   const now = new Date();

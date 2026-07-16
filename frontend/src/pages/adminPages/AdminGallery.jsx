@@ -218,10 +218,10 @@ export default function AdminGallery() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <div className="search-field flex-1">
+            <Search size={15} className="search-field-icon" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search albums..." className="form-input pl-9" />
+              placeholder="Search albums..." className="form-input search-field-input" />
           </div>
           <select value={filterSub} onChange={(e) => setFilterSub(e.target.value)} className="form-select">
             <option value="all">All sections</option>

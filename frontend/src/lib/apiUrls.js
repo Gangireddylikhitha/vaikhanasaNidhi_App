@@ -1,5 +1,37 @@
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+import { Capacitor } from '@capacitor/core';
+
+const LOCAL_API = 'http://127.0.0.1:5000/api';
+const PRODUCTION_API = 'https://vaikhanasa-nidhi-api.onrender.com/api';
+
+// Call Capacitor directly here (instead of importing from ./native) to avoid a
+// circular import: native.js -> pushNotifications.js -> userApi.js ->
+// axiosInstance.js -> apiUrls.js -> native.js, which triggers a temporal
+// dead zone ("Cannot access 'isNativeApp' before initialization").
+function isNativeApp() {
+  return Capacitor.isNativePlatform();
+}
+
+function isLocalBrowser() {
+  if (typeof window === 'undefined') return import.meta.env.DEV;
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1';
+}
+
+function resolveApiBaseUrl() {
+  // Mobile APK / Capacitor — use production API from .env.production
+  if (isNativeApp()) {
+    return import.meta.env.VITE_API_BASE_URL?.trim() || PRODUCTION_API;
+  }
+
+  // Desktop browser on localhost (npm run dev / vite preview) — always local backend
+  if (isLocalBrowser() || import.meta.env.DEV) {
+    return LOCAL_API;
+  }
+
+  return import.meta.env.VITE_API_BASE_URL?.trim() || PRODUCTION_API;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const health = '/health';
 export const signup = '/auth/signup';
@@ -33,7 +65,6 @@ export const scripturePdf = (id) => `/scriptures/${id}/pdf`;
 export const subcategories = '/subcategories';
 export const categories = '/categories';
 export const stats = '/stats';
-export const dailySloka = '/daily-sloka';
 export const galleryEvents = '/gallery/events';
 export const galleryPhotos = '/gallery/photos';
 export const panchangam = '/panchangam';
@@ -46,6 +77,7 @@ export const userProgress = '/users/me/progress';
 export const userProgressById = (id) => `/users/me/progress/${id}`;
 export const userPassword = '/users/me/password';
 export const userSettings = '/users/me/settings';
+export const userFcmToken = '/users/me/fcm-token';
 export const userProfile = '/users/me';
 export const userVerification = '/users/me/verification';
 export const userVerificationProof = '/users/me/verification/proof';

@@ -3,6 +3,7 @@ const GalleryPhoto = require('../models/galleryPhoto.model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const { deleteByUrl, deleteManyUrls } = require('../utils/cloudinaryDelete');
+const { notifyNewContentSafe } = require('../services/notificationService');
 
 function slugify(text) {
   return String(text).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -74,6 +75,16 @@ exports.createPhotos = catchAsync(async (req, res) => {
       sort_order: Number(p.sort_order) ?? i,
     }))
   );
+
+  const count = created.length;
+  notifyNewContentSafe({
+    type: 'new_gallery',
+    title: 'కొత్త చిత్రాలు',
+    body: `${event.label_te || event.label_en || 'Gallery'} — ${count} కొత్త ఫోటో${count > 1 ? 'లు' : ''} జోడించబడ్డాయి`,
+    id: event.slug,
+    clickAction: 'OPEN_GALLERY',
+  });
+
   res.status(201).json(created.map((p) => p.toPublicJSON()));
 });
 

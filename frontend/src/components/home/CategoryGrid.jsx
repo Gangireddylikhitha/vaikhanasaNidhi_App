@@ -1,5 +1,6 @@
 import { ChevronRight, Lock } from 'lucide-react';
 import { usePublicCategories } from '../../hooks/usePublicCategories';
+import { useNativeScrollPassthrough } from '../../hooks/useNativeScrollPassthrough';
 import { isGuest } from '../../store/authStore';
 import { useLoginPrompt } from '../../context/LoginPromptContext';
 import GuestNavLink from '../GuestNavLink';
@@ -8,6 +9,7 @@ function CategoryGrid() {
   const { data: categories = [] } = usePublicCategories();
   const { requireLogin } = useLoginPrompt();
   const guest = isGuest();
+  const scrollRef = useNativeScrollPassthrough();
 
   if (guest) {
     return (
@@ -56,7 +58,7 @@ function CategoryGrid() {
       </div>
 
       <div className="scroll-row-wrap px-4 sm:px-6 lg:px-8">
-        <div className="scroll-row py-2">
+        <div ref={scrollRef} className="scroll-row py-2">
           {categories.map((cat) => {
             const Icon = cat.icon;
             if (!cat.img || !Icon) return null;

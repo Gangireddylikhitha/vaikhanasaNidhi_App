@@ -1,3 +1,5 @@
+import { syncNativeStatusBar, isNativeApp } from './native';
+
 const MODE_VARS = {
   dark: {
     '--bg-page': '#0a0a0a',
@@ -107,6 +109,7 @@ const DEFAULT_SETTINGS = {
   textColor: 'bright',
   notifyDailySloka: true,
   notifyPanchangam: false,
+  notifyNewContent: true,
 };
 
 export function getReaderBaseFontSize(fontSize = 'medium') {
@@ -130,6 +133,10 @@ export function applyTheme(settings = {}) {
   Object.entries({ ...modeVars, ...textVars }).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
+
+  if (isNativeApp()) {
+    syncNativeStatusBar(themeMode);
+  }
 
   window.dispatchEvent(new CustomEvent('themechange', { detail: { fontSize, textColor, themeMode } }));
 }

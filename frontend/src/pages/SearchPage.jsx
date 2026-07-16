@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { keepPreviousData } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, TrendingUp, Hash, LayoutGrid, List, BookOpen, ChevronLeft } from "lucide-react";
 import ScriptureCard from "../components/ScriptureCard";
@@ -37,7 +38,7 @@ function ScriptureRow({ scripture, parentKey, subcategories, mainCategories }) {
   const badge = getScriptureBadgeLabel(scripture, parentKey, subcategories, mainCategories);
 
   return (
-    <a href={"/read/" + scripture.id}
+    <Link to={"/read/" + scripture.id}
       className="corner-card rounded-2xl flex items-center gap-3 p-3 active:brightness-110 transition-all w-full">
       <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center bg-elevated"
         style={{ border: '1px solid var(--border-medium)' }}>
@@ -57,7 +58,7 @@ function ScriptureRow({ scripture, parentKey, subcategories, mainCategories }) {
         <p className="truncate text-muted" style={{ fontSize: 10 }}>{scripture.title_english}</p>
       </div>
       <BookOpen size={14} className="flex-shrink-0 text-muted" />
-    </a>
+    </Link>
   );
 }
 
@@ -135,7 +136,9 @@ export default function SearchPage() {
   const showResults = debouncedQuery.trim() || browseMode || activeCat !== "all";
   const listParams = showResults ? apiParams : {};
 
-  const { data: scriptures = [], isLoading, isError, refetch } = usePublicScriptures(listParams);
+  const { data: scriptures = [], isLoading, isFetching, isError, refetch } = usePublicScriptures(listParams, {
+    placeholderData: keepPreviousData,
+  });
 
   function selectSubcategory(key) {
     setActiveSubKey(key);
@@ -168,7 +171,8 @@ export default function SearchPage() {
     }
   }
 
-  if (isLoading) {
+  // Full-page loader only on first load — never while typing.
+  if (isLoading && scriptures.length === 0) {
     return (
       <div className="min-h-screen page-bg">
         <ScriptureLoadingState />
@@ -176,7 +180,7 @@ export default function SearchPage() {
     );
   }
 
-  if (isError) {
+  if (isError && scriptures.length === 0) {
     return (
       <div className="min-h-screen page-bg">
         <ScriptureErrorState onRetry={refetch} />
@@ -237,11 +241,11 @@ export default function SearchPage() {
             </button>
           </div>
         </div>
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <div className="search-field">
+          <Search size={15} className="search-field-icon" />
           <input value={query} onChange={e => setQuery(e.target.value)}
             placeholder="Search scriptures, mantras, verses..."
-            className="form-input pl-9 pr-9 py-2.5"
+            className="form-input search-field-input pr-9 py-2.5"
             style={{ fontFamily: "Tiro Telugu, serif" }}
             autoFocus />
           {query && (
@@ -252,7 +256,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto scrollbar-hide">
+      <div className="overflow-x-auto scrollbar-hide native-x-scroll scroll-row">
         <div className="flex gap-2 px-4 pt-3 pb-2" style={{ width: "max-content" }}>
           {chips.map((chip) => {
             const active = activeChipKey === chip.key;
@@ -352,7 +356,7 @@ export default function SearchPage() {
             </motion.div>
           )}
 
-          {showResults && results.length === 0 && (
+          {showResults && results.length === 0 && !isFetching && (
             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="text-center py-20 text-muted">
               <Search size={44} className="mx-auto mb-4 opacity-20" />

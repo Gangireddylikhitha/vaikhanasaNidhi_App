@@ -13,6 +13,7 @@ import { getApiError } from '../lib/apiError';
 import { isGuest, isVerifiedUser, updateVerificationStatus } from '../store/authStore';
 import { useLoginPrompt } from '../context/LoginPromptContext';
 import ThemeToggle from '../components/ThemeToggle';
+import { brandLogo } from '../constants/brandAssets';
 
 function BilingualLabel({ te, en, icon: Icon, required }) {
   return (
@@ -43,7 +44,7 @@ function PendingState() {
 function RedirectingState() {
   return (
     <div className="verification-page min-h-screen flex flex-col items-center justify-center gap-3 p-6">
-      <Loader2 className="animate-spin text-primary-gold" size={36} />
+      <img src={brandLogo} alt="" className="brand-loader" width={56} height={56} />
       <p className="font-telugu text-sm gold-glow text-center" style={{ fontFamily: 'Tiro Telugu, serif' }}>
         ధృవీకరణ పూర్తయింది — యాప్‌కు తీసుకెళ్తున్నాం...
       </p>
@@ -128,7 +129,7 @@ export default function VerificationPage() {
   if (isLoading) {
     return (
       <div className="verification-page min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary-gold" size={32} />
+        <img src={brandLogo} alt="" className="brand-loader" width={56} height={56} />
       </div>
     );
   }

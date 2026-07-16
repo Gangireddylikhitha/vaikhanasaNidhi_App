@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronRight, Sparkles, BookOpen, Info, Phone } from "lucide-react";
@@ -12,7 +12,7 @@ import { usePublicScriptures, useRecentScriptures } from "../hooks/usePublicScri
 import { useReadingProgress } from "../hooks/useUserData";
 import { usePublicStats } from "../hooks/usePublicStats";
 import { useDailySloka } from "../hooks/useDailySloka";
-import { msUntilMidnight } from "../lib/dailySloka";
+import { useNativeScrollPassthrough } from "../hooks/useNativeScrollPassthrough";
 import { isImageProgressItem } from "../utils/scriptureSubcategoryMatch";
 
 import { isLoggedIn, isGuest } from "../store/authStore";
@@ -24,10 +24,10 @@ import lightVaamira from "../assets/images/lightVaamira.png";
 const GOLD = "#E4B24B";
 
 export default function Home() {
-  const [, forceUpdate] = useState(0);
+  const recentScrollRef = useNativeScrollPassthrough();
   const { themeMode } = useThemeMode();
   const guest = isGuest();
-  const { data: dailySloka, refetch: refetchSloka } = useDailySloka();
+  const { data: dailySloka } = useDailySloka();
   const { data: publicStats } = usePublicStats();
   const { data: mainCategories = [] } = usePublicCategories();
   const { data: allScriptures = [], isLoading, isError, refetch } = usePublicScriptures();
@@ -40,11 +40,6 @@ export default function Home() {
   const continueReading = progress
     .filter((p) => p.progress > 0 && p.progress < 95 && !isImageProgressItem(p, scriptureById))
     .slice(0, 3);
-
-  useEffect(() => {
-    const timer = setTimeout(() => refetchSloka(), msUntilMidnight());
-    return () => clearTimeout(timer);
-  }, [dailySloka, refetchSloka]);
 
   const quoteSloka = dailySloka || { telugu: '' };
   const stats = publicStats || {
@@ -148,7 +143,7 @@ export default function Home() {
             </GuestNavLink>
           </div>
           <div className="scroll-row-wrap px-4 sm:px-6 lg:px-8">
-            <div className="scroll-row py-2">
+            <div ref={recentScrollRef} className="scroll-row py-2">
               {isLoading && <ScriptureLoadingState message="Loading recent scriptures…" />}
               {isError && <ScriptureErrorState onRetry={refetch} />}
               {!isLoading && !isError && recentScriptures.map((s, i) => (

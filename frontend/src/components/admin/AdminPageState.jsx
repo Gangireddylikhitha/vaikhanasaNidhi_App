@@ -1,10 +1,16 @@
-import { Loader2 } from 'lucide-react';
+import { brandLogo } from '../../constants/brandAssets';
 
 export default function AdminPageState({ isLoading, isError, error, onRetry, children }) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-20 text-muted">
-        <Loader2 size={18} className="animate-spin" />
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted">
+        <img
+          src={brandLogo}
+          alt=""
+          className="brand-loader"
+          width={48}
+          height={48}
+        />
         <span className="text-sm">Loading...</span>
       </div>
     );

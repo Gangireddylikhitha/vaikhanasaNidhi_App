@@ -63,7 +63,7 @@ export default function AdminUsers() {
 
   return (
     <AdminPageState
-      isLoading={isLoading}
+      isLoading={isLoading && !data}
       isError={isError}
       error={getApiError(error, 'Failed to load users.')}
       onRetry={refetch}
@@ -74,14 +74,14 @@ export default function AdminUsers() {
           <p className="text-sm text-muted mt-0.5">Registered users</p>
         </div>
 
-        <div className="relative max-w-md">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <div className="search-field max-w-md">
+          <Search size={15} className="search-field-icon" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or username..."
-            className="form-input pl-9 w-full"
+            className="form-input search-field-input w-full"
           />
         </div>
 

@@ -1,9 +1,15 @@
-import { Loader2 } from 'lucide-react';
+import { brandLogo } from '../constants/brandAssets';
 
 export function ScriptureLoadingState({ message = 'Loading scriptures…' }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 text-muted">
-      <Loader2 size={28} className="animate-spin mb-3" style={{ color: '#C88F2D' }} />
+      <img
+        src={brandLogo}
+        alt=""
+        className="brand-loader mb-3"
+        width={56}
+        height={56}
+      />
       <p className="text-sm">{message}</p>
     </div>
   );

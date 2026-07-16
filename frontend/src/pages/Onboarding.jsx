@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Bell, BookOpen, ChevronRight, ArrowRight } from 'lucide-react';
 import { markOnboardingDone } from '../store/useAppStore';
 import ThemeToggle from '../components/ThemeToggle';
-import logo from '../assets/images/logo.png';
+import { brandLogo as logo } from '../constants/brandAssets';
 
 const SLIDES = [
   {

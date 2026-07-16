@@ -1,23 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, BookOpen, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
-import { getDailySahasranamaSloka, getDailySahasranamaIndex, msUntilMidnight } from "../../lib/dailySloka";
 import { useDailySloka } from "../../hooks/useDailySloka";
+import { sahasranamTodayPath, sahasranamAllPath } from "../../utils/sahasranamLink";
 import heroImg from "../../assets/images/heroImg.png";
 
 export default function HeroCard() {
-  const { data: apiSloka, refetch } = useDailySloka();
-  const fallback = getDailySahasranamaSloka();
-  const sloka = apiSloka?.telugu ? apiSloka : fallback;
-  const slokaIndex = apiSloka?.index || getDailySahasranamaIndex();
+  const { data: sloka } = useDailySloka();
+  const todayPath = sahasranamTodayPath();
+  const allPath = sahasranamAllPath();
+  const slokaIndex = sloka?.index;
   const [open, setOpen] = useState(false);
   const [showMeaning, setShowMeaning] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => refetch(), msUntilMidnight());
-    return () => clearTimeout(timer);
-  }, [apiSloka, refetch]);
 
   function handleShare() {
     if (navigator.share) navigator.share({ title: "Vaikhanasa Nidhi", text: sloka.telugu });
@@ -30,7 +25,7 @@ export default function HeroCard() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="hero-card mx-3 sm:mx-6 lg:mx-8 mt-3 sm:mt-6 lg:mt-8"
+        className="hero-card mx-3 sm:mx-6 lg:mx-8 mt-2 sm:mt-6 lg:mt-8"
       >
         <div className="hero-card-shell rounded-2xl sm:rounded-3xl overflow-hidden">
           <div className="hero-card-texture" aria-hidden="true" />
@@ -47,7 +42,7 @@ export default function HeroCard() {
           </div>
 
           <div className="hero-content">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-3">
               <Sparkles size={13} className="text-primary-gold flex-shrink-0" />
               <span className="hero-eyebrow">
                 {sloka.source || `శ్రీ విష్ణు సహస్రనామం — శ్లోకం ${slokaIndex}`}
@@ -85,7 +80,7 @@ export default function HeroCard() {
               </button>
             </div>
 
-            <Link to="/read/2" className="btn-gold hero-cta">
+            <Link to={todayPath} className="btn-gold hero-cta">
               <span className="font-telugu" style={{ fontFamily: "Tiro Telugu, serif" }}>
                 సహస్రనామం చదవండి
               </span>
@@ -148,7 +143,7 @@ export default function HeroCard() {
                       <button onClick={handleShare} className="btn-ghost flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium active:scale-95 transition-all">
                         <Share2 size={15} /> Share
                       </button>
-                      <Link to="/read/2" onClick={() => setOpen(false)} className="btn-gold flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold active:scale-95 transition-all">
+                      <Link to={allPath} onClick={() => setOpen(false)} className="btn-gold flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold active:scale-95 transition-all">
                         <BookOpen size={15} /> Full Sahasranama
                       </Link>
                     </div>

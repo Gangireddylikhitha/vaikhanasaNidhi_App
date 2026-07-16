@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useSignup, useLogin, useAdminLogin, useGuestLogin, useChangePasswordLogin } from '../hooks/useAuth';
 import { mapAuthError } from '../lib/apiError';
 import ThemeToggle from '../components/ThemeToggle';
-import logo from '../assets/images/logo.png';
+import { brandLogo as logo } from '../constants/brandAssets';
 
 function PasswordInput({ value, onChange, placeholder, required }) {
   const [show, setShow] = useState(false);

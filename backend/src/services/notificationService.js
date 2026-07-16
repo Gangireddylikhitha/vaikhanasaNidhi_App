@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const User = require('../models/user.model');
 const { getMessaging, isFirebaseConfigured } = require('../config/firebase');
-const { getDailySloka } = require('../utils/dailySloka');
+const { getDailySloka, getIstDateKey } = require('../utils/dailySloka');
 const { getPanchangam } = require('./panchangamService');
 
 const NOTIFICATION_HOUR = Number(process.env.NOTIFICATION_HOUR_IST) || 6;
@@ -61,7 +61,7 @@ async function sendToTokens(tokens, payload) {
 }
 
 async function notifyDailySloka() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getIstDateKey(new Date());
   if (lastSlokaDate === today) return;
 
   const users = await User.find({
@@ -75,22 +75,27 @@ async function notifyDailySloka() {
     return;
   }
 
+  // Same static 108 list as the app — one śloka per IST calendar day
   const sloka = getDailySloka(new Date());
   const body = sloka.telugu?.slice(0, 180) || sloka.meaning?.slice(0, 180) || 'Open app for today\'s sloka';
 
   await sendToTokens(tokens, {
-    title: 'నేటి శ్లోకం',
+    title: `నేటి శ్లోకం · ${sloka.index}`,
     body,
     clickAction: 'OPEN_DAILY_SLOKA',
-    data: { type: 'daily_sloka', date: today },
+    data: {
+      type: 'daily_sloka',
+      date: today,
+      index: String(sloka.index),
+    },
   });
 
   lastSlokaDate = today;
-  console.log(`[notifications] daily sloka sent to ${tokens.length} Android device(s)`);
+  console.log(`[notifications] daily sloka #${sloka.index} sent to ${tokens.length} Android device(s)`);
 }
 
 async function notifyPanchangam() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getIstDateKey(new Date());
   if (lastPanchangamDate === today) return;
 
   const users = await User.find({
@@ -116,6 +121,44 @@ async function notifyPanchangam() {
 
   lastPanchangamDate = today;
   console.log(`[notifications] panchangam sent to ${tokens.length} Android device(s)`);
+}
+
+/**
+ * Push when admin uploads new scripture / gallery content.
+ * Fire-and-forget from controllers — never blocks the create API.
+ */
+async function notifyNewContent({ type, title, body, id, clickAction } = {}) {
+  if (!isFirebaseConfigured()) return { sent: 0, failed: 0 };
+
+  const users = await User.find({
+    'settings.notifyNewContent': { $ne: false },
+    'fcm_tokens.0': { $exists: true },
+  }).select('fcm_tokens');
+
+  const tokens = collectAndroidTokens(users);
+  if (!tokens.length) return { sent: 0, failed: 0 };
+
+  const payloadTitle = title || 'కొత్త కంటెంట్';
+  const payloadBody = (body || 'వైఖానస నిధిలో కొత్త విషయం జోడించబడింది').slice(0, 180);
+
+  const result = await sendToTokens(tokens, {
+    title: payloadTitle,
+    body: payloadBody,
+    clickAction: clickAction || 'OPEN_APP',
+    data: {
+      type: type || 'new_content',
+      ...(id ? { id: String(id) } : {}),
+    },
+  });
+
+  console.log(`[notifications] new content (${type || 'content'}) sent to ${tokens.length} device(s)`);
+  return result;
+}
+
+function notifyNewContentSafe(payload) {
+  notifyNewContent(payload).catch((err) => {
+    console.warn('[notifications] new content failed:', err.message);
+  });
 }
 
 async function runScheduledNotifications() {
@@ -159,6 +202,8 @@ module.exports = {
   sendToTokens,
   notifyDailySloka,
   notifyPanchangam,
+  notifyNewContent,
+  notifyNewContentSafe,
   runScheduledNotifications,
   startNotificationScheduler,
 };

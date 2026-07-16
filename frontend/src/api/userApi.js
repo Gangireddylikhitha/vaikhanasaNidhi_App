@@ -7,6 +7,7 @@ import {
   userProgress,
   userProgressById,
   userSettings,
+  userFcmToken,
   userProfile,
   userPassword,
 } from '../lib/apiUrls';
@@ -64,6 +65,21 @@ export async function fetchSettings() {
 
 export async function updateSettingsApi(settings) {
   const { data } = await axiosInstance.patch(userSettings, settings);
+  return data;
+}
+
+export async function registerFcmTokenApi(token) {
+  const { data } = await axiosInstance.post(userFcmToken, {
+    token,
+    platform: 'android',
+  });
+  return data;
+}
+
+export async function removeFcmTokenApi(token) {
+  const { data } = await axiosInstance.delete(userFcmToken, {
+    data: { token },
+  });
   return data;
 }
 

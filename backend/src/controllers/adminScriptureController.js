@@ -8,6 +8,7 @@ const {
   collectScriptureImageUrls,
   diffRemovedUrls,
 } = require('../utils/cloudinaryDelete');
+const { notifyNewContentSafe } = require('../services/notificationService');
 
 const { FILTER_CATEGORY_SLUGS } = require('../data/defaultCategories');
 
@@ -193,6 +194,14 @@ exports.createScripture = catchAsync(async (req, res) => {
     page_count: page_count != null && page_count !== ''
       ? Number(page_count)
       : (content.verses.length || 0),
+  });
+
+  notifyNewContentSafe({
+    type: 'new_scripture',
+    title: 'కొత్త గ్రంథం',
+    body: scripture.title_telugu || scripture.title_english || 'కొత్త స్క్రిప్చర్ జోడించబడింది',
+    id: scripture._id,
+    clickAction: 'OPEN_SCRIPTURE',
   });
 
   res.status(201).json(scripture.toAdminJSON());

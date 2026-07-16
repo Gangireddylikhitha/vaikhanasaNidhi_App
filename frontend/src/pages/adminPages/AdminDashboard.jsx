@@ -6,12 +6,12 @@ import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import { getApiError } from '../../lib/apiError';
 
 export default function AdminDashboard({ onOpenUsers, onOpenVerifications }) {
-  const { data, isLoading, isError, error, refetch } = useAdminDashboard();
+  const { data, isLoading, isError, isFetching, error, refetch } = useAdminDashboard();
 
   return (
     <AdminPageState
-      isLoading={isLoading}
-      isError={isError || !data}
+      isLoading={isLoading || (isFetching && !data)}
+      isError={isError}
       error={getApiError(error, 'Failed to load dashboard stats.')}
       onRetry={refetch}
     >

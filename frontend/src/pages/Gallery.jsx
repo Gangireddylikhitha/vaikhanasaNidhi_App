@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Images, Loader2 } from 'lucide-react';
+import { Images } from 'lucide-react';
 import { useGalleryEvents, useGalleryPhotos, useGallerySubcategories } from '../hooks/useGallery';
 import CompactImageLightbox from '../components/CompactImageLightbox';
+import { brandLogo } from '../constants/brandAssets';
 
 const GOLD = 'linear-gradient(135deg, #C88F2D 0%, #E4B24B 45%, #F6D67A 100%)';
 const GOLD_DARK = '#8B6200';
@@ -48,8 +49,8 @@ export default function Gallery() {
       <div className="max-w-4xl mx-auto px-4 py-6">
 
         {isLoading && (
-          <div className="flex items-center justify-center gap-2 py-20 text-gray-500">
-            <Loader2 size={20} className="animate-spin" />
+          <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted">
+            <img src={brandLogo} alt="" className="brand-loader" width={48} height={48} />
             <span className="text-sm">Loading gallery…</span>
           </div>
         )}

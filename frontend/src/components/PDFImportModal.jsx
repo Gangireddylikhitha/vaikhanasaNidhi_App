@@ -8,6 +8,7 @@ import { rebuildVersesFromPages } from '../lib/pdfParser';
 import { renderPdfPagesToBlobs, titleFromPdfFilename, getPdfPageCount } from '../lib/pdfToImages';
 import { uploadBookPageImages, uploadBookPdf } from '../api/uploadApi';
 import { GOLD_TEXT } from '../constants/adminConstants';
+import { getApiError } from '../lib/apiError';
 
 export default function PDFImportModal({
   subcategories = [],
@@ -63,7 +64,13 @@ export default function PDFImportModal({
   }
 
   async function handleFile(file) {
-    if (!file || file.type !== 'application/pdf') {
+    // Mobile file pickers often report an empty or octet-stream MIME type for
+    // PDFs, so accept by extension too instead of a strict type match.
+    const isPdf = !!file && (
+      file.type === 'application/pdf'
+      || /\.pdf$/i.test(file.name || '')
+    );
+    if (!isPdf) {
       setError('Please upload a valid PDF file.');
       return;
     }
@@ -125,14 +132,9 @@ export default function PDFImportModal({
       setParseProgress(null);
       setStep('review');
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || '';
       pendingFileRef.current = file;
       setShowImageFallback(true);
-      setError(
-        msg.includes('Cloudinary') || msg.includes('upload') || msg.includes('configured')
-          ? 'PDF upload failed. Check Cloudinary is configured on the server.'
-          : 'Failed to upload PDF. File may be too large (max 120 MB).'
-      );
+      setError(getApiError(err, 'Failed to upload PDF. It may be too large (max 120 MB) or the server upload is not configured.'));
       setParseProgress(null);
       setStep('upload');
     }
@@ -187,12 +189,7 @@ export default function PDFImportModal({
       setParseProgress(null);
       setStep('review');
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || '';
-      setError(
-        msg.includes('Cloudinary') || msg.includes('upload')
-          ? 'Upload failed. Check Cloudinary is configured on the server.'
-          : 'Failed to convert PDF to page images. Try a smaller PDF or check your connection.'
-      );
+      setError(getApiError(err, 'Failed to convert PDF to page images. Try a smaller PDF or check your connection.'));
       setParseProgress(null);
       setStep('upload');
     }

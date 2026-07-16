@@ -1,4 +1,14 @@
+import { API_BASE_URL } from './apiUrls';
+
 export function getApiError(error, fallback = 'Something went wrong. Try again.') {
+  if (!error?.response) {
+    if (error?.code === 'ECONNABORTED') {
+      return 'Request timed out. Check that the backend is running.';
+    }
+    if (error?.message === 'Network Error' || error?.code === 'ERR_NETWORK') {
+      return `Cannot reach the server at ${API_BASE_URL}. Make sure backend is running: cd backend && npm start`;
+    }
+  }
   return error?.response?.data?.error || error?.message || fallback;
 }
 

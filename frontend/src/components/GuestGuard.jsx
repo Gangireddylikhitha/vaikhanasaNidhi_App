@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { isGuest, isRegisteredUser, isVerifiedUser } from '../store/authStore';
+import { isGuest, isRegisteredUser, isVerifiedUser, isAdmin } from '../store/authStore';
 import { useLoginPrompt } from '../context/LoginPromptContext';
 
 /** Blocks guests (login popup) and unverified users (verification page). */
@@ -17,7 +17,7 @@ export default function GuestGuard({ children }) {
   // the correct destination after the modal succeeds.
   if (isGuest()) return null;
 
-  if (isRegisteredUser() && !isVerifiedUser()) {
+  if (isRegisteredUser() && !isAdmin() && !isVerifiedUser()) {
     return <Navigate to="/verification" replace state={{ returnTo }} />;
   }
 

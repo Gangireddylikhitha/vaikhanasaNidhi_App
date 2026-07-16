@@ -1,26 +1,30 @@
-import { useCustomQuery } from './useCustomApi';
-import * as dailySlokaApi from '../api/dailySlokaApi';
-import { getDailySahasranamaSloka } from '../lib/dailySloka';
-import { isLoggedIn } from '../store/authStore';
+import { useState, useEffect } from 'react';
+import { getTodayDailySloka, msUntilMidnight } from '../lib/dailySloka';
 
-export function useDailySloka(date = new Date(), options = {}) {
-  const dateKey = date instanceof Date ? date.toISOString().slice(0, 10) : date;
+/**
+ * Daily Vishnu Sahasranama śloka from frontend static data only
+ * (`src/data/sahasraNamalu.js`). Rolls over at local midnight.
+ */
+export function useDailySloka() {
+  const [tick, setTick] = useState(0);
 
-  return useCustomQuery({
-    queryKey: ['daily-sloka', dateKey],
-    queryFn: () => dailySlokaApi.fetchDailySloka(dateKey),
-    enabled: isLoggedIn(),
-    staleTime: 60 * 60 * 1000,
-    placeholderData: () => {
-      const local = getDailySahasranamaSloka();
-      return {
-        telugu: local.telugu,
-        meaning: local.meaning,
-        source: local.source,
-        index: null,
-        total: null,
-      };
-    },
-    ...options,
-  });
+  useEffect(() => {
+    let timer;
+    const schedule = () => {
+      timer = setTimeout(() => {
+        setTick((t) => t + 1);
+        schedule();
+      }, msUntilMidnight());
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, []);
+
+  // tick forces re-read after midnight
+  void tick;
+
+  return {
+    data: getTodayDailySloka(),
+    refetch: () => setTick((t) => t + 1),
+  };
 }

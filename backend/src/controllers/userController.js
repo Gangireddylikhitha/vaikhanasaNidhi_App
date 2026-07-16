@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS = {
   textColor: 'bright',
   notifyDailySloka: true,
   notifyPanchangam: false,
+  notifyNewContent: true,
 };
 
 async function loadUser(req) {
@@ -139,7 +140,7 @@ exports.getSettings = catchAsync(async (req, res) => {
 
 exports.updateSettings = catchAsync(async (req, res) => {
   const user = await loadUser(req);
-  const allowed = ['themeMode', 'fontSize', 'textColor', 'notifyDailySloka', 'notifyPanchangam'];
+  const allowed = ['themeMode', 'fontSize', 'textColor', 'notifyDailySloka', 'notifyPanchangam', 'notifyNewContent'];
   const next = { ...(user.settings?.toObject?.() || user.settings || {}) };
   allowed.forEach((key) => {
     if (req.body[key] !== undefined) next[key] = req.body[key];
@@ -245,7 +246,7 @@ exports.syncLocalData = catchAsync(async (req, res) => {
   }
 
   if (settings && typeof settings === 'object') {
-    const allowed = ['themeMode', 'fontSize', 'textColor', 'notifyDailySloka', 'notifyPanchangam'];
+    const allowed = ['themeMode', 'fontSize', 'textColor', 'notifyDailySloka', 'notifyPanchangam', 'notifyNewContent'];
     const next = { ...(user.settings?.toObject?.() || user.settings || {}) };
     allowed.forEach((key) => {
       if (settings[key] !== undefined) next[key] = settings[key];

@@ -80,13 +80,13 @@ export default function SubcategoryPage() {
 
       <div className="px-4 sm:px-6 max-w-2xl mx-auto">
         {category.hasSearch && (
-          <div className="relative mb-4">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <div className="relative mb-4 search-field">
+            <Search size={16} className="search-field-icon" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={category.searchPlaceholder || "వెతకండి..."}
-              className="w-full pl-10 pr-4 py-3 rounded-xl form-input text-sm"
+              className="w-full search-field-input pr-4 py-3 rounded-xl form-input text-sm"
             />
           </div>
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ThemeToggle from "../components/ThemeToggle";
+import { brandLogo as logo } from "../constants/brandAssets";
 
 export default function Splash({ onDone }) {
   const [phase, setPhase] = useState("in");   // "in" | "hold" | "out"
@@ -98,7 +99,7 @@ export default function Splash({ onDone }) {
                 style={{ background: "radial-gradient(circle, #c9a84c55 0%, transparent 70%)", transform: "scale(1.4)" }}
               />
               <img
-                src="/vaikhanasa.png"
+                src={logo}
                 alt="Vaikhanasa Nidhi"
                 className="relative z-10 drop-shadow-2xl"
                 style={{ width: 180, height: 180, objectFit: "contain" }}

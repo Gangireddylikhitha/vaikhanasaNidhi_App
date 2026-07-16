@@ -12,36 +12,39 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'vaikhanasa-nidhi-api' });
 });
 
-const defaultOrigin = 'http://localhost:5173';
-const allowedOrigins = (process.env.CLIENT_ORIGIN || defaultOrigin)
-  .split(',')
-  .map((value) => value.trim())
-  .filter(Boolean);
+const isDev = process.env.NODE_ENV !== 'production';
 
-const capacitorOrigins = new Set([
-  'https://localhost',
-  'http://localhost',
-  'capacitor://localhost',
-]);
+if (isDev) {
+  // Local dev — allow any origin (Vite ports, 127.0.0.1, LAN IP, etc.)
+  app.use(cors({ origin: true, credentials: true }));
+} else {
+  const defaultOrigin = 'http://localhost:5173';
+  const allowedOrigins = (process.env.CLIENT_ORIGIN || defaultOrigin)
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
 
-function isAllowedOrigin(origin) {
-  if (!origin) return true;
-  if (allowedOrigins.includes(origin)) return true;
-  if (capacitorOrigins.has(origin)) return true;
-  // Vite may use 5174, 5175, etc. when 5173 is busy
-  if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) {
-    return true;
+  const capacitorOrigins = new Set([
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+  ]);
+
+  function isAllowedOrigin(origin) {
+    if (!origin) return true;
+    if (allowedOrigins.includes(origin)) return true;
+    if (capacitorOrigins.has(origin)) return true;
+    return false;
   }
-  return false;
-}
 
-app.use(cors({
-  origin(origin, callback) {
-    if (isAllowedOrigin(origin)) return callback(null, true);
-    return callback(new Error(`CORS blocked origin: ${origin}`));
-  },
-  credentials: true,
-}));
+  app.use(cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) return callback(null, true);
+      return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
+    credentials: true,
+  }));
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

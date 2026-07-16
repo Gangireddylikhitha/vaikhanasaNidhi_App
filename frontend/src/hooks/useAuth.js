@@ -3,7 +3,9 @@ import { useCustomQuery, useCustomMutation } from './useCustomApi';
 import * as authApi from '../api/authApi';
 import { setAuthSession, clearAuthSession } from '../store/authStore';
 import { syncLocalDataToServer } from '../lib/syncLocalData';
+import { registerPushNotifications, unregisterPushNotifications } from '../lib/pushNotifications';
 import { USER_BOOKMARKS_KEY, USER_PROGRESS_KEY, USER_SETTINGS_KEY } from './useUserData';
+import { ADMIN_QUERY_KEYS } from './adminQueryKeys';
 
 export const AUTH_ME_QUERY_KEY = ['auth', 'me'];
 
@@ -45,6 +47,7 @@ export function useLogin(options) {
         } catch {
           // sync is best-effort; login still succeeds
         }
+        registerPushNotifications().catch(() => {});
       }
       onSuccess?.(data, ...args);
     },
@@ -52,7 +55,17 @@ export function useLogin(options) {
 }
 
 export function useAdminLogin(options) {
-  return useAuthSessionMutation(authApi.adminLoginUser, options);
+  const queryClient = useQueryClient();
+  const { onSuccess, ...rest } = options || {};
+
+  return useAuthSessionMutation(authApi.adminLoginUser, {
+    ...rest,
+    onSuccess: (data, ...args) => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.dashboard });
+      queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.users });
+      onSuccess?.(data, ...args);
+    },
+  });
 }
 
 export function useGuestLogin(options) {
@@ -80,13 +93,17 @@ export function useLogout(options = {}) {
   const { onSuccess, ...rest } = options;
 
   return useCustomMutation({
-    mutationFn: authApi.logoutUser,
+    mutationFn: async () => {
+      await unregisterPushNotifications();
+      return authApi.logoutUser();
+    },
     onSuccess: (...args) => {
       clearAuthSession();
       queryClient.removeQueries({ queryKey: ['user'] });
       onSuccess?.(...args);
     },
-    onError: () => {
+    onError: async () => {
+      await unregisterPushNotifications();
       clearAuthSession();
       queryClient.removeQueries({ queryKey: ['user'] });
     },

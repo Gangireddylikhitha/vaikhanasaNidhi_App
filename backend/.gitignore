@@ -3,4 +3,6 @@ node_modules/
 uploads/
 *.log
 firebase-service-account.json
+firebase-service-account.json.json
+*firebase-adminsdk*.json
 migration-report.json

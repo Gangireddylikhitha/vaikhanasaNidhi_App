@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { usePanchangam } from '../hooks/usePanchangam';
 import { toIstDateKey } from '../lib/panchangamSource';
+import { brandLogo } from '../constants/brandAssets';
 import PanchangamDatePicker from '../components/panchangam/PanchangamDatePicker';
 import {
   NithraPage,
@@ -98,7 +99,10 @@ export default function Panchangam() {
       </div>
 
       {isLoading && !p && (
-        <p className="font-telugu text-center py-8 text-body">పంచాంగం లోడ్ అవుతోంది…</p>
+        <div className="flex flex-col items-center justify-center gap-3 py-8">
+          <img src={brandLogo} alt="" className="brand-loader" width={48} height={48} />
+          <p className="font-telugu text-center text-body">పంచాంగం లోడ్ అవుతోంది…</p>
+        </div>
       )}
 
       {isError && !p && (
