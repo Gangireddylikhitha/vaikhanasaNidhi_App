@@ -72,6 +72,16 @@ function AppContent() {
     applyTheme(getSettings());
   }, []);
 
+  useEffect(() => {
+    // Fired by the axios interceptor when the refresh token is expired/invalid
+    // and the session can no longer be renewed silently.
+    function onForcedLogout() {
+      setPhase('login');
+    }
+    window.addEventListener('auth:logout', onForcedLogout);
+    return () => window.removeEventListener('auth:logout', onForcedLogout);
+  }, []);
+
   function afterSplash() {
     if (isLoggedIn()) {
       setPhase('app');

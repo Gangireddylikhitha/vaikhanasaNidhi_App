@@ -1,7 +1,21 @@
 const User = require('../models/user.model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
-const { signToken, createGuestPayload, authResponse } = require('../utils/tokenUtils');
+const {
+  signToken,
+  signRefreshToken,
+  verifyToken,
+  createGuestPayload,
+  authResponse,
+} = require('../utils/tokenUtils');
+
+// Builds the { token, refreshToken } pair from a JWT payload.
+function issueTokens(payload) {
+  return {
+    token: signToken(payload),
+    refreshToken: signRefreshToken(payload),
+  };
+}
 
 exports.signup = catchAsync(async (req, res) => {
   const { name, username, password } = req.body;
@@ -27,8 +41,8 @@ exports.signup = catchAsync(async (req, res) => {
     last_login_at: new Date(),
   });
 
-  const token = signToken({ id: user._id.toString(), role: user.role });
-  res.status(201).json(authResponse(token, user.toPublicJSON()));
+  const { token, refreshToken } = issueTokens({ id: user._id.toString(), role: user.role });
+  res.status(201).json(authResponse(token, user.toPublicJSON(), refreshToken));
 });
 
 exports.login = catchAsync(async (req, res) => {
@@ -51,8 +65,8 @@ exports.login = catchAsync(async (req, res) => {
   user.last_login_at = new Date();
   await user.save({ validateBeforeSave: false });
 
-  const token = signToken({ id: user._id.toString(), role: user.role });
-  res.json(authResponse(token, user.toPublicJSON()));
+  const { token, refreshToken } = issueTokens({ id: user._id.toString(), role: user.role });
+  res.json(authResponse(token, user.toPublicJSON(), refreshToken));
 });
 
 exports.adminLogin = catchAsync(async (req, res) => {
@@ -76,18 +90,62 @@ exports.adminLogin = catchAsync(async (req, res) => {
     throw new AppError('Invalid admin credentials', 401, 'INVALID_CREDENTIALS');
   }
 
-  const token = signToken({ id: user._id.toString(), role: 'admin' });
-  res.json(authResponse(token, user.toPublicJSON()));
+  const { token, refreshToken } = issueTokens({ id: user._id.toString(), role: 'admin' });
+  res.json(authResponse(token, user.toPublicJSON(), refreshToken));
 });
 
 exports.guestLogin = catchAsync(async (req, res) => {
   const guest = createGuestPayload();
-  const token = signToken(guest);
+  const { token, refreshToken } = issueTokens(guest);
   res.json(authResponse(token, {
     role: guest.role,
     name: guest.name,
     username: null,
-  }));
+  }, refreshToken));
+});
+
+// Exchanges a valid refresh token for a fresh access + refresh token pair.
+// This lets clients stay logged in indefinitely without hitting the login
+// screen, as long as they refresh before the 6-month refresh token expires.
+exports.refresh = catchAsync(async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    throw new AppError('Refresh token is required', 400, 'BAD_REQUEST');
+  }
+
+  let decoded;
+  try {
+    decoded = verifyToken(refreshToken);
+  } catch (err) {
+    throw new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN');
+  }
+
+  if (decoded.type !== 'refresh') {
+    throw new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN');
+  }
+
+  // Guests aren't backed by a DB record — just re-mint from the payload.
+  if (decoded.role === 'guest') {
+    const guestPayload = { id: decoded.id, role: 'guest', name: decoded.name };
+    const { token, refreshToken: newRefresh } = issueTokens(guestPayload);
+    return res.json(authResponse(token, {
+      role: 'guest',
+      name: decoded.name,
+      username: null,
+    }, newRefresh));
+  }
+
+  const user = await User.findById(decoded.id);
+  if (!user) {
+    throw new AppError('User no longer exists', 401, 'INVALID_REFRESH_TOKEN');
+  }
+
+  const { token, refreshToken: newRefresh } = issueTokens({
+    id: user._id.toString(),
+    role: user.role,
+  });
+  res.json(authResponse(token, user.toPublicJSON(), newRefresh));
 });
 
 exports.me = catchAsync(async (req, res) => {

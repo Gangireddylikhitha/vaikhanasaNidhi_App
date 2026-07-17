@@ -55,6 +55,7 @@ function initFirebaseAdmin() {
 
     messaging = admin.messaging();
     initialized = true;
+    console.log(`[firebase] loaded project: ${serviceAccount.project_id}`);
     return messaging;
   } catch (err) {
     console.warn('[firebase] init failed:', err.message);

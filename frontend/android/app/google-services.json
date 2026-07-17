@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "294597597377",
-    "project_id": "vaikhanasanidhiapp",
-    "storage_bucket": "vaikhanasanidhiapp.firebasestorage.app"
+    "project_number": "907019175292",
+    "project_id": "vaikhanasanidhiapp-6139e",
+    "storage_bucket": "vaikhanasanidhiapp-6139e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:294597597377:android:1c3b1bc77a3ac7660b5c40",
+        "mobilesdk_app_id": "1:907019175292:android:1fe98b4759de8b890890f9",
         "android_client_info": {
           "package_name": "com.vaikhanasanidhi.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDLtyfK29235J8arT9c4-wv75FEDuC2mD8"
+          "current_key": "AIzaSyDhsaX5tGlF6rKv5-GdNYZaA8Srxa1ypLQ"
         }
       ],
       "services": {

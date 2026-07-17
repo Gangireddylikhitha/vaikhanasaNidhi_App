@@ -20,9 +20,17 @@ export function getToken() {
   return load().token || null;
 }
 
-export function setAuthSession({ token, user }) {
+export function getRefreshToken() {
+  return load().refreshToken || null;
+}
+
+export function setAuthSession({ token, refreshToken, user }) {
+  const prev = load();
   const session = {
     token,
+    // Preserve the existing refresh token when a caller only refreshes the
+    // profile (e.g. verification update) without a new refresh token.
+    refreshToken: refreshToken ?? prev.refreshToken ?? null,
     role: user.role,
     name: user.name,
     username: user.username ?? null,
@@ -32,6 +40,18 @@ export function setAuthSession({ token, user }) {
   save(session);
   notifyVerificationChange(session.verification_status);
   return session;
+}
+
+// Silently swap in a freshly minted token pair without touching the rest of
+// the session (used by the axios auto-refresh flow).
+export function updateTokens({ token, refreshToken }) {
+  const auth = load();
+  if (!auth.loggedIn) return;
+  save({
+    ...auth,
+    token: token ?? auth.token,
+    refreshToken: refreshToken ?? auth.refreshToken,
+  });
 }
 
 export function clearAuthSession() {

@@ -38,6 +38,7 @@ export const signup = '/auth/signup';
 export const login = '/auth/login';
 export const adminLogin = '/auth/admin/login';
 export const guest = '/auth/guest';
+export const refresh = '/auth/refresh';
 export const changePassword = '/auth/change-password';
 export const me = '/auth/me';
 export const logout = '/auth/logout';
