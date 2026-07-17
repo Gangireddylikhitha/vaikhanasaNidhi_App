@@ -135,22 +135,22 @@ export default function Layout({ children, onLogout }) {
         style={{ background: 'var(--bg-nav)', borderColor: scrolled ? 'var(--border-subtle)' : 'transparent' }}
       >
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid var(--border-medium)', boxShadow: '0 0 12px rgba(200,143,45,0.2)' }}>
-            <img src={logo} alt="Vaikhanasa Nidhi" className="w-11 h-11 object-contain" />
+        <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden" style={{ border: '1px solid var(--border-medium)', boxShadow: '0 0 12px rgba(200,143,45,0.2)' }}>
+            <img src={logo} alt="Vaikhanasa Nidhi" className="w-9 h-9 object-contain" />
           </div>
-          <span className="font-telugu font-bold text-xl gold-glow text-primary-gold" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+          <span className="font-telugu font-bold text-lg gold-glow text-primary-gold whitespace-nowrap" style={{ fontFamily: 'Tiro Telugu, serif' }}>
             వైఖానస నిధి
           </span>
         </Link>
 
         {/* Center nav links */}
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 flex-1 min-w-0 justify-center overflow-x-auto scrollbar-hide">
           {NAV_LINKS.map(({ to, label }) => (
             <GuestNavLink
               key={to}
               to={to}
-              className="px-4 py-2 rounded-lg text-sm transition-all duration-200 font-telugu"
+              className="px-3 py-2 rounded-lg text-sm transition-all duration-200 font-telugu flex-shrink-0 whitespace-nowrap"
               style={{
                 color: isActive(to) ? 'var(--text-primary)' : 'var(--text-muted)',
                 fontFamily: 'Tiro Telugu, serif',
@@ -164,7 +164,7 @@ export default function Layout({ children, onLogout }) {
             <GuestNavLink
               key={to}
               to={to}
-              className="px-3 py-2 rounded-lg text-sm transition-all duration-200 font-telugu opacity-80"
+              className="px-2.5 py-2 rounded-lg text-sm transition-all duration-200 font-telugu opacity-80 flex-shrink-0 whitespace-nowrap"
               style={{
                 color: isActive(to) ? 'var(--text-primary)' : 'var(--text-muted)',
                 fontFamily: 'Tiro Telugu, serif',
@@ -177,15 +177,15 @@ export default function Layout({ children, onLogout }) {
         </nav>
 
         {/* Right icons */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <GuestNavLink to="/search" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Search">
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <GuestNavLink to="/search" className="p-2 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Search">
             <Search size={18} />
           </GuestNavLink>
           <SoundToggle
-            className="p-2.5 rounded-lg transition-colors hover:bg-white/5"
+            className="p-2 rounded-lg transition-colors hover:bg-white/5"
             iconSize={18}
           />
-          <button onClick={() => setSettingsOpen(true)} className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Settings">
+          <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Settings">
             <Settings size={18} />
           </button>
           <a
@@ -193,7 +193,7 @@ export default function Layout({ children, onLogout }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={openWhatsAppChat}
-            className="sidebar-social-btn sidebar-social-btn--compact p-2.5"
+            className="sidebar-social-btn sidebar-social-btn--compact p-2"
             aria-label="WhatsApp Chat"
             title="Chat on WhatsApp: 79810 91684"
           >
@@ -203,21 +203,21 @@ export default function Layout({ children, onLogout }) {
             href={INSTAGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="sidebar-social-btn sidebar-social-btn--compact p-2.5"
+            className="sidebar-social-btn sidebar-social-btn--compact p-2"
             aria-label="Instagram"
             title="@ssri_vaikhanasam_app"
           >
             <InstagramIcon size={18} />
           </a>
           {admin && (
-            <Link to="/admin" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Admin Panel">
+            <Link to="/admin" className="p-2 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Admin Panel">
               <Shield size={18} />
             </Link>
           )}
           {onLogout && (
             <button
               onClick={onLogout}
-              className="flex items-center justify-center p-2.5 rounded-lg transition-colors hover:bg-white/5 ml-1 flex-shrink-0"
+              className="flex items-center justify-center p-2 rounded-lg transition-colors hover:bg-white/5 ml-1 flex-shrink-0"
               style={{ color: GOLD, border: '1px solid var(--border-medium)' }}
               title="Logout"
               aria-label="Logout"
