@@ -131,7 +131,7 @@ export default function Layout({ children, onLogout }) {
 
       {/* Top Navigation — desktop & tablet */}
       <header
-        className={`hidden lg:flex fixed top-0 left-0 right-0 z-30 items-center justify-between px-8 h-20 transition-all duration-300 backdrop-blur-md ${scrolled ? 'border-b' : ''}`}
+        className={`hidden lg:flex fixed top-0 left-0 right-0 z-30 items-center justify-between gap-3 px-6 h-20 transition-all duration-300 backdrop-blur-md ${scrolled ? 'border-b' : ''}`}
         style={{ background: 'var(--bg-nav)', borderColor: scrolled ? 'var(--border-subtle)' : 'transparent' }}
       >
         {/* Logo */}
@@ -177,20 +177,17 @@ export default function Layout({ children, onLogout }) {
         </nav>
 
         {/* Right icons */}
-        <div className="flex items-center gap-1">
-          <GuestNavLink to="/search" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <GuestNavLink to="/search" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Search">
             <Search size={18} />
           </GuestNavLink>
           <SoundToggle
             className="p-2.5 rounded-lg transition-colors hover:bg-white/5"
             iconSize={18}
           />
-          <button onClick={() => setSettingsOpen(true)} className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
+          <button onClick={() => setSettingsOpen(true)} className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }} title="Settings">
             <Settings size={18} />
           </button>
-          <GuestNavLink to="/profile" className="p-2.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: GOLD }}>
-            <User size={18} />
-          </GuestNavLink>
           <a
             href={WHATSAPP_URL}
             target="_blank"
@@ -218,7 +215,13 @@ export default function Layout({ children, onLogout }) {
             </Link>
           )}
           {onLogout && (
-            <button onClick={onLogout} className="p-2.5 rounded-lg transition-colors hover:bg-white/5 ml-1" style={{ color: '#C88F2D88' }}>
+            <button
+              onClick={onLogout}
+              className="flex items-center justify-center p-2.5 rounded-lg transition-colors hover:bg-white/5 ml-1 flex-shrink-0"
+              style={{ color: GOLD, border: '1px solid var(--border-medium)' }}
+              title="Logout"
+              aria-label="Logout"
+            >
               <LogOut size={18} />
             </button>
           )}
