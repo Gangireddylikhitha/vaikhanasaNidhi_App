@@ -168,7 +168,11 @@ exports.createScripture = catchAsync(async (req, res) => {
     pdf_url,
   } = req.body;
 
-  if (!title_telugu?.trim()) {
+  const galleryRequest = isImageGalleryCategory(
+    parent_category?.trim().toLowerCase(),
+    category?.trim().toLowerCase()
+  );
+  if (!title_telugu?.trim() && !galleryRequest) {
     throw new AppError('Telugu title is required', 400, 'BAD_REQUEST');
   }
 
@@ -178,8 +182,11 @@ exports.createScripture = catchAsync(async (req, res) => {
   }, placement);
 
   const scripture = await Scripture.create({
-    title_telugu: title_telugu.trim(),
-    title_english: title_english?.trim() || '',
+    title_telugu: title_telugu?.trim()
+      || title_english?.trim()
+      || (galleryRequest ? subcategory?.trim() || 'చిత్రాలు' : ''),
+    title_english: title_english?.trim()
+      || (galleryRequest ? title_telugu?.trim() || subcategory?.trim() || 'Images' : ''),
     ...placement,
     deity: deity?.trim() || '',
     description: description || '',

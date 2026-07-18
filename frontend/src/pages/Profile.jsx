@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { getCategoryInfo } from "../utils/categoryLookup";
 import { usePublicCategories } from "../hooks/usePublicCategories";
 import { isImageProgressItem } from "../utils/scriptureSubcategoryMatch";
+import { isValidScriptureId } from "../utils/scriptureId";
 import { useMe } from "../hooks/useAuth";
 import { useReadingProgress, useBookmarks, useProfileUpdate, useDeleteAccount } from "../hooks/useUserData";
 import { getAuth, isRegisteredUser } from "../store/authStore";
@@ -28,7 +29,9 @@ export default function Profile() {
   const [nameDraft, setNameDraft] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
 
-  const readingProgress = progress.filter((p) => !isImageProgressItem(p));
+  const readingProgress = progress.filter((p) => (
+    isValidScriptureId(p.scripture_id) && !isImageProgressItem(p)
+  ));
 
   const displayName = me?.name || auth.name || "భక్తుడు";
   const subtitle = me?.username || auth.username || "Vaikhanasa Bhakti Path";

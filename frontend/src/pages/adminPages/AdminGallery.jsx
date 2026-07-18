@@ -289,6 +289,15 @@ export default function AdminGallery() {
                         <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setAlbumModal(album)}
+                      disabled={isMutating}
+                      className="admin-chip-btn btn-ghost w-full justify-center mt-3 disabled:opacity-50"
+                    >
+                      <Pencil size={13} />
+                      <span>Edit photos</span>
+                    </button>
                   </div>
                 </motion.div>
               );

@@ -17,18 +17,32 @@ function isLocalBrowser() {
   return host === 'localhost' || host === '127.0.0.1';
 }
 
+/** Ensure base URL ends with /api (axios routes are like /categories, /auth/login). */
+function normalizeApiBaseUrl(url) {
+  if (!url?.trim()) return '';
+  const trimmed = url.trim().replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
 function resolveApiBaseUrl() {
-  // Mobile APK / Capacitor — use production API from .env.production
+  const envUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+  // Mobile APK / Capacitor — use API from .env.production
   if (isNativeApp()) {
-    return import.meta.env.VITE_API_BASE_URL?.trim() || PRODUCTION_API;
+    return envUrl || PRODUCTION_API;
   }
 
-  // Desktop browser on localhost (npm run dev / vite preview) — always local backend
+  // If VITE_API_BASE_URL is set in .env, use it (even on localhost dev)
+  if (envUrl) {
+    return envUrl;
+  }
+
+  // Default local dev — local backend
   if (isLocalBrowser() || import.meta.env.DEV) {
     return LOCAL_API;
   }
 
-  return import.meta.env.VITE_API_BASE_URL?.trim() || PRODUCTION_API;
+  return PRODUCTION_API;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();

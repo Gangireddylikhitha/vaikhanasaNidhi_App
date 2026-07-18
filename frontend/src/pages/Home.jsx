@@ -14,6 +14,7 @@ import { usePublicStats } from "../hooks/usePublicStats";
 import { useDailySloka } from "../hooks/useDailySloka";
 import { useNativeScrollPassthrough } from "../hooks/useNativeScrollPassthrough";
 import { isImageProgressItem } from "../utils/scriptureSubcategoryMatch";
+import { isValidScriptureId } from "../utils/scriptureId";
 
 import { isLoggedIn, isGuest } from "../store/authStore";
 import GuestNavLink from "../components/GuestNavLink";
@@ -38,7 +39,12 @@ export default function Home() {
     [allScriptures]
   );
   const continueReading = progress
-    .filter((p) => p.progress > 0 && p.progress < 95 && !isImageProgressItem(p, scriptureById))
+    .filter((p) => (
+      isValidScriptureId(p.scripture_id)
+      && p.progress > 0
+      && p.progress < 95
+      && !isImageProgressItem(p, scriptureById)
+    ))
     .slice(0, 3);
 
   const quoteSloka = dailySloka || { telugu: '' };

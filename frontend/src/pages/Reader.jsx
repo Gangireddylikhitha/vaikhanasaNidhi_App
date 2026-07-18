@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Bookmark, Share2, ZoomIn, ZoomOut, Copy, Check, BookOpen } from "lucide-react";
 import { getCategoryInfo } from "../utils/categoryLookup";
 import { usePublicCategories } from "../hooks/usePublicCategories";
+import { usePublicSubcategories } from "../hooks/usePublicSubcategories";
 import { isImageGalleryScripture, isBookImageScripture, isBookPdfScripture } from "../utils/scriptureSubcategoryMatch";
 import { usePublicScripture, usePublicScriptures } from "../hooks/usePublicScriptures";
 import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
@@ -24,6 +25,7 @@ export default function Reader() {
   const { data: scripture, isLoading, isError, refetch } = usePublicScripture(id);
   const { data: allScriptures = [] } = usePublicScriptures();
   const { data: mainCategories = [] } = usePublicCategories();
+  const { data: readerSubcategories = [] } = usePublicSubcategories(scripture?.parent_category);
   const { data: bookmarks = [] } = useBookmarks();
   const { data: readingProgress = [] } = useReadingProgress({ enabled: isLoggedIn() });
   const { addMutation, removeMutation, isBookmarked: checkBookmarked } = useBookmarkActions();
@@ -170,6 +172,13 @@ export default function Reader() {
   }
 
   const cat = getCategoryInfo(scripture.category, mainCategories);
+  const subcategory = readerSubcategories.find(
+    (sub) => (sub.key || sub.slug || sub.id) === scripture.subcategory
+  );
+  const subcategoryLabel = subcategory?.label_te
+    || subcategory?.label
+    || subcategory?.label_en
+    || scripture.subcategory;
   const isGallery = isImageGalleryScripture(scripture);
   const isBookPdfMode = isBookPdfScripture(scripture);
   const isBookImageMode = !isBookPdfMode && isBookImageScripture(scripture);
@@ -238,6 +247,12 @@ export default function Reader() {
                     style={{ fontFamily: "Tiro Telugu, serif", background: '#C88F2D22', border: '1px solid #C88F2D33' }}>
                     {cat.label}
                   </span>
+                  {subcategoryLabel && (
+                    <span className="px-3 py-1 rounded-full text-xs font-telugu text-secondary"
+                      style={{ fontFamily: "Tiro Telugu, serif", background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
+                      {subcategoryLabel}
+                    </span>
+                  )}
                   {scripture.deity && (
                     <span className="px-3 py-1 rounded-full text-xs text-secondary"
                       className="rounded-xl p-3 bg-elevated"

@@ -65,7 +65,7 @@ export default function AdminScriptureForm({
     [subcategories, form.parent_category]
   );
 
-  const canSave = form.title_telugu.trim() && (isEdit || form.subcategory)
+  const canSave = (isGallery || form.title_telugu.trim()) && (isEdit || form.subcategory)
     && (!isGallery || form.images.length > 0)
     && !uploading;
 
@@ -142,6 +142,9 @@ export default function AdminScriptureForm({
       toast.error('Please choose image files only.');
       return;
     }
+    // Keep albums ordered: sort picked files by filename with numeric awareness
+    // (pic1, pic2, pic10 — and timestamped names) regardless of picker order.
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
     const entries = files.map((file) => ({
       id: crypto.randomUUID(),
       file,
@@ -179,14 +182,22 @@ export default function AdminScriptureForm({
     e.preventDefault();
     if (!canSave) return;
 
+    const selectedSubcategory = filteredSubs.find((sub) => sub.key === form.subcategory);
+    const fallbackTeluguTitle = selectedSubcategory?.label_te
+      || selectedSubcategory?.label
+      || selectedSubcategory?.label_en
+      || 'చిత్రాలు';
+    const fallbackEnglishTitle = selectedSubcategory?.label_en
+      || selectedSubcategory?.label
+      || 'Images';
     const images = (form.images || []).map(({ url, caption }) => ({
       url,
       caption: caption?.trim() || '',
     }));
 
     const payload = {
-      title_telugu: form.title_telugu.trim(),
-      title_english: form.title_english?.trim() || '',
+      title_telugu: form.title_telugu.trim() || (isGallery ? fallbackTeluguTitle : ''),
+      title_english: form.title_english?.trim() || (isGallery ? fallbackEnglishTitle : ''),
       parent_category: form.parent_category,
       subcategory: form.subcategory || '',
       category: form.category,
@@ -230,15 +241,16 @@ export default function AdminScriptureForm({
           <div className="flex-1 overflow-y-auto scrollbar-hide px-6 py-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Title (Telugu) *</label>
+                <label className="form-label">Title (Telugu) {!isGallery && '*'}</label>
                 <input value={form.title_telugu} onChange={(e) => set('title_telugu', e.target.value)}
-                  placeholder={isGallery ? 'చిత్రాలు పేరు' : 'స్తోత్రం పేరు'} required className="form-input"
+                  placeholder={isGallery ? 'Optional — section name will be used' : 'స్తోత్రం పేరు'}
+                  required={!isGallery} className="form-input"
                   style={{ fontFamily: 'Tiro Telugu, serif' }} />
               </div>
               <div>
                 <label className="form-label">Title (English)</label>
                 <input value={form.title_english || ''} onChange={(e) => set('title_english', e.target.value)}
-                  placeholder={isGallery ? 'Image album name' : 'Stotra Name'} className="form-input" />
+                  placeholder={isGallery ? 'Optional — section name will be used' : 'Stotra Name'} className="form-input" />
               </div>
             </div>
 

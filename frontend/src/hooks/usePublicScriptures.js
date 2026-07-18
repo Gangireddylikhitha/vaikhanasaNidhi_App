@@ -1,6 +1,7 @@
 import { useCustomQuery } from './useCustomApi';
 import * as publicScriptureApi from '../api/publicScriptureApi';
 import { useIsVerified } from './useVerificationStatus';
+import { isValidScriptureId } from '../utils/scriptureId';
 
 export const PUBLIC_SCRIPTURES_KEY = ['scriptures', 'public'];
 
@@ -28,10 +29,11 @@ export function useRecentScriptures(limit = 8, options = {}) {
 
 export function usePublicScripture(id, options = {}) {
   const verified = useIsVerified();
+  const validId = isValidScriptureId(id);
   return useCustomQuery({
     queryKey: [...PUBLIC_SCRIPTURES_KEY, id, verified],
     queryFn: () => publicScriptureApi.fetchPublicScriptureById(id),
-    enabled: verified && Boolean(id),
+    enabled: verified && validId,
     staleTime: 5 * 60 * 1000,
     ...options,
   });

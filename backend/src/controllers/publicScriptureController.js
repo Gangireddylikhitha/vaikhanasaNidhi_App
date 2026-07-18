@@ -47,7 +47,11 @@ exports.getRecentScriptures = catchAsync(async (req, res) => {
 });
 
 exports.getScripture = catchAsync(async (req, res) => {
-  const scripture = await Scripture.findById(req.params.id);
+  const id = req.params.id;
+  if (!/^[0-9a-f]{24}$/i.test(id)) {
+    throw new AppError('Scripture not found', 404, 'NOT_FOUND');
+  }
+  const scripture = await Scripture.findById(id);
   if (!scripture) throw new AppError('Scripture not found', 404, 'NOT_FOUND');
   res.json(scripture.toAdminJSON());
 });
