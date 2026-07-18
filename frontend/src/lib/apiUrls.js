@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 
-const LOCAL_API = 'http://127.0.0.1:5000/api';
-const PRODUCTION_API = 'https://vaikhanasa-nidhi-api.onrender.com/api';
+const DEFAULT_LOCAL_API = 'http://127.0.0.1:5000/api';
+const PRODUCTION_API = 'http://vaikhanasa-api.ap-south-1.elasticbeanstalk.com/api';
 
 // Call Capacitor directly here (instead of importing from ./native) to avoid a
 // circular import: native.js -> pushNotifications.js -> userApi.js ->
@@ -25,21 +25,17 @@ function normalizeApiBaseUrl(url) {
 }
 
 function resolveApiBaseUrl() {
-  const envUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+  const configuredApi = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configuredApi) {
+    return configuredApi;
+  }
 
-  // Mobile APK / Capacitor — use API from .env.production
   if (isNativeApp()) {
-    return envUrl || PRODUCTION_API;
+    return PRODUCTION_API;
   }
 
-  // If VITE_API_BASE_URL is set in .env, use it (even on localhost dev)
-  if (envUrl) {
-    return envUrl;
-  }
-
-  // Default local dev — local backend
   if (isLocalBrowser() || import.meta.env.DEV) {
-    return LOCAL_API;
+    return DEFAULT_LOCAL_API;
   }
 
   return PRODUCTION_API;
