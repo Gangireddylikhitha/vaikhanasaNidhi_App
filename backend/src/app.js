@@ -18,11 +18,17 @@ if (isDev) {
   // Local dev — allow any origin (Vite ports, 127.0.0.1, LAN IP, etc.)
   app.use(cors({ origin: true, credentials: true }));
 } else {
-  const defaultOrigin = 'http://localhost:5173';
-  const allowedOrigins = (process.env.CLIENT_ORIGIN || defaultOrigin)
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://localhost:5173',
+    'https://127.0.0.1:5173',
+  ];
+  const configuredOrigins = (process.env.CLIENT_ORIGIN || '')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
+  const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])];
 
   const capacitorOrigins = new Set([
     'https://localhost',
@@ -30,10 +36,16 @@ if (isDev) {
     'capacitor://localhost',
   ]);
 
+  function normalizeOrigin(origin) {
+    if (!origin) return '';
+    return origin.endsWith('/') ? origin.slice(0, -1) : origin;
+  }
+
   function isAllowedOrigin(origin) {
     if (!origin) return true;
-    if (allowedOrigins.includes(origin)) return true;
-    if (capacitorOrigins.has(origin)) return true;
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalizedOrigin)) return true;
+    if (capacitorOrigins.has(normalizedOrigin)) return true;
     return false;
   }
 
