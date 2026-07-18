@@ -460,7 +460,7 @@ export default function PDFImportModal({
                   <input
                     ref={fileRef}
                     type="file"
-                    accept="application/pdf"
+                    accept="application/pdf,.pdf"
                     className="hidden"
                     onChange={(e) => handleFile(e.target.files[0])}
                   />

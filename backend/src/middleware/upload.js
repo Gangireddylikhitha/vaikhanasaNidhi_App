@@ -1,6 +1,24 @@
 const multer = require('multer');
 const AppError = require('../utils/AppError');
 
+function isPdfFile(file) {
+  const mimeType = (file?.mimetype || '').toLowerCase();
+  const hasPdfExtension = /\.pdf$/i.test(file?.originalname || '');
+
+  if (!mimeType && hasPdfExtension) return true;
+
+  return [
+    'application/pdf',
+    'application/x-pdf',
+    'application/acrobat',
+    'application/vnd.pdf',
+    'application/octet-stream',
+    'application/x-download',
+    'binary/octet-stream',
+    'application/force-download',
+  ].includes(mimeType) && hasPdfExtension;
+}
+
 const imageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
@@ -28,11 +46,7 @@ const pdfUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 120 * 1024 * 1024 },
   fileFilter(req, file, cb) {
-    const hasPdfExtension = /\.pdf$/i.test(file.originalname || '');
-    // Mobile file pickers frequently send an empty or generic MIME type for
-    // PDFs, so fall back to the .pdf extension in those cases.
-    const isPdf = file.mimetype === 'application/pdf'
-      || ((file.mimetype === 'application/octet-stream' || !file.mimetype) && hasPdfExtension);
+    const isPdf = isPdfFile(file);
     if (!isPdf) {
       return cb(new AppError('Only PDF files are allowed', 400, 'BAD_REQUEST'));
     }
@@ -40,4 +54,4 @@ const pdfUpload = multer({
   },
 });
 
-module.exports = { imageUpload, documentUpload, pdfUpload };
+module.exports = { imageUpload, documentUpload, pdfUpload, isPdfFile };
