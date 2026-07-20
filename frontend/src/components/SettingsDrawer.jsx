@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Type, Bell, Shield, HelpCircle, ChevronRight, Palette, Moon, Sun } from 'lucide-react';
 import { getSettings, saveSettings } from '../store/useAppStore';
@@ -26,6 +27,7 @@ const COLOR_OPTIONS_LIGHT = [
 ];
 
 export default function SettingsDrawer({ open, onClose }) {
+  const navigate = useNavigate();
   const { data: serverSettings } = useUserSettings();
   const settingsMutation = useSettingsActions();
   const [settings, setSettings] = useState(getSettings());
@@ -200,8 +202,8 @@ export default function SettingsDrawer({ open, onClose }) {
               </Section>
 
               <Section title="About">
-                <LinkRow icon={Shield} label="Privacy policy" />
-                <LinkRow icon={HelpCircle} label="Help & support" />
+                <LinkRow icon={Shield} label="Privacy policy" onClick={() => { onClose(); navigate('/privacy-policy'); }} />
+                <LinkRow icon={HelpCircle} label="Help & support" onClick={() => { onClose(); navigate('/contact'); }} />
               </Section>
             </div>
 
@@ -248,10 +250,11 @@ function ToggleRow({ icon: Icon, label, value, onChange }) {
   );
 }
 
-function LinkRow({ icon: Icon, label }) {
+function LinkRow({ icon: Icon, label, onClick }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex items-center gap-3 px-5 py-3 w-full transition-colors bg-[var(--drawer-bg)] hover:bg-[var(--hover-bg)]"
     >
       <Icon size={18} className="text-muted" />

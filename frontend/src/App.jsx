@@ -18,6 +18,7 @@ import SubcategoryPage from './pages/SubcategoryPage';
 import Gallery from './pages/Gallery';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import VerificationPage from './pages/VerificationPage';
 import LoginPage from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
@@ -110,30 +111,33 @@ function AppContent() {
 
   if (phase === 'splash') return <Splash onDone={afterSplash} />;
   if (phase === 'onboarding') return <Onboarding onDone={() => setPhase('login')} />;
-  if (phase === 'login') {
+  if (phase !== 'app') {
     return (
       <>
-        <LoginPage onLogin={handleLogin} />
+        <Routes>
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="*" element={<LoginPage onLogin={handleLogin} />} />
+        </Routes>
         <AppToaster />
       </>
     );
   }
   return (
-    <BrowserRouter>
-      <LoginPromptProvider>
-        <AppRoutes onLogout={handleLogout} />
-        <AppToaster />
-      </LoginPromptProvider>
-    </BrowserRouter>
+    <LoginPromptProvider>
+      <AppRoutes onLogout={handleLogout} />
+      <AppToaster />
+    </LoginPromptProvider>
   );
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
@@ -205,6 +209,7 @@ function AppRoutes({ onLogout }) {
         <Route path="/gallery" element={<Guarded><Gallery /></Guarded>} />
         <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
         <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       </Route>
     </Routes>
   );
