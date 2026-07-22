@@ -23,6 +23,8 @@ if (isDev) {
     'http://127.0.0.1:5173',
     'https://localhost:5173',
     'https://127.0.0.1:5173',
+    'https://www.vaikhanasanidhi.com',
+    'https://vaikhanasanidhi.com',
   ];
   const configuredOrigins = (process.env.CLIENT_ORIGIN || '')
     .split(',')
