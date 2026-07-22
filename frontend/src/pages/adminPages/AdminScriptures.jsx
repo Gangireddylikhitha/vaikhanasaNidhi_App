@@ -1,8 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { BookOpen, Plus, Pencil, Trash2, Search, FileText } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Trash2, Search, FileText, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import AdminBadge from '../../components/admin/AdminBadge';
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog';
 import AdminScriptureForm from '../../components/admin/AdminScriptureForm';
@@ -10,7 +16,9 @@ import PDFImportModal from '../../components/PDFImportModal';
 import AdminPageState from '../../components/admin/AdminPageState';
 import { GOLD_TEXT } from '../../constants/adminConstants';
 import { useSubcategories, useSaveSubcategory, useCategories } from '../../hooks/useCategories';
-import { useScriptures, useSaveScripture, useDeleteScripture } from '../../hooks/useScriptures';
+import {
+  useScriptures, useSaveScripture, useDeleteScripture, useReorderScriptures,
+} from '../../hooks/useScriptures';
 import { getApiError, mapAdminError } from '../../lib/apiError';
 import { mergeSubcategories } from '../../utils/mergeSubcategories';
 import {
@@ -21,6 +29,18 @@ import {
 } from '../../utils/scriptureSubcategoryMatch';
 import { invalidateAdminQueries } from '../../hooks/adminQueryKeys';
 import * as categoryApi from '../../api/categoryApi';
+
+function SortableRow({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative',
+    zIndex: isDragging ? 1 : 'auto',
+  };
+  return children({ setNodeRef, style, dragHandleProps: { ...attributes, ...listeners } });
+}
 
 export default function AdminScriptures() {
   const queryClient = useQueryClient();
@@ -51,6 +71,14 @@ export default function AdminScriptures() {
   const saveMutation = useSaveScripture();
   const saveSubcategoryMutation = useSaveSubcategory();
   const deleteMutation = useDeleteScripture();
+  const reorderMutation = useReorderScriptures({
+    onError: () => toast.error('Could not save the new order — reverted.'),
+  });
+
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  );
 
   const [search, setSearch] = useState('');
   const [filterParent, setFilterParent] = useState('all');
@@ -100,6 +128,18 @@ export default function AdminScriptures() {
     const matchQ = !q || s.title_telugu.includes(q) || s.title_english?.toLowerCase().includes(q);
     return matchParent && matchSub && matchQ;
   });
+
+  const reorderableIds = filtered.map((s) => s.id);
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = reorderableIds.indexOf(active.id);
+    const newIndex = reorderableIds.indexOf(over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(filtered, oldIndex, newIndex);
+    reorderMutation.mutate(reordered.map((s) => s.id));
+  }
 
   function handleRetry() {
     refetchScriptures();
@@ -223,6 +263,7 @@ export default function AdminScriptures() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-elevated" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <th className="w-8 px-2 py-3" aria-hidden="true" />
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Title</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide hidden lg:table-cell">Category</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide hidden lg:table-cell">Subcategory</th>
@@ -230,61 +271,77 @@ export default function AdminScriptures() {
                     <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filtered.map((s, i) => {
-                    const sub = resolveScriptureSubForDisplay(s, allSubs);
-                    return (
-                      <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.03 }}
-                        className="hover:bg-white/5 transition-colors"
-                        style={{ borderTop: '1px solid #C88F2D15' }}>
-                        <td className="px-4 py-3">
-                          <div className="font-semibold gold-glow" style={{ fontFamily: 'Tiro Telugu, serif' }}>
-                            {s.title_telugu}
-                          </div>
-                          <div className="text-xs text-muted">{s.title_english}</div>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5 lg:hidden">
-                            <span className="text-[11px] text-muted">{parentLabel(s)}</span>
-                            {sub ? (
-                              <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
-                            ) : (
-                              <span className="text-[11px] text-muted">{subLabel(s)}</span>
+                <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={reorderableIds} strategy={verticalListSortingStrategy}>
+                    <tbody>
+                      {filtered.map((s) => {
+                        const sub = resolveScriptureSubForDisplay(s, allSubs);
+                        return (
+                          <SortableRow key={s.id} id={s.id}>
+                            {({ setNodeRef, style, dragHandleProps }) => (
+                              <tr ref={setNodeRef} style={{ ...style, borderTop: '1px solid #C88F2D15' }}
+                                className="hover:bg-white/5 transition-colors">
+                                <td className="px-2 py-3">
+                                  <button type="button" {...dragHandleProps} disabled={isMutating}
+                                    className="p-1.5 rounded-lg text-muted hover:bg-white/5 cursor-grab active:cursor-grabbing touch-none disabled:opacity-40"
+                                    aria-label="Drag to reorder">
+                                    <GripVertical size={16} />
+                                  </button>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="font-semibold gold-glow" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                                    {s.title_telugu}
+                                  </div>
+                                  <div className="text-xs text-muted">{s.title_english}</div>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5 lg:hidden">
+                                    <span className="text-[11px] text-muted">{parentLabel(s)}</span>
+                                    {sub ? (
+                                      <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
+                                    ) : (
+                                      <span className="text-[11px] text-muted">{subLabel(s)}</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 hidden lg:table-cell">
+                                  <span className="text-xs text-muted">{parentLabel(s)}</span>
+                                </td>
+                                <td className="px-4 py-3 hidden lg:table-cell">
+                                  {sub
+                                    ? <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
+                                    : <span className="text-xs text-muted">{subLabel(s)}</span>}
+                                </td>
+                                <td className="px-4 py-3 hidden sm:table-cell">
+                                  <span className="text-xs tabular-nums text-muted">{contentCount(s)}</span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button type="button" onClick={() => setModal(s)} disabled={isMutating}
+                                      className="p-2 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-50"
+                                      style={{ color: GOLD_TEXT }}>
+                                      <Pencil size={14} />
+                                    </button>
+                                    <button type="button" onClick={() => setConfirmDelete(s.id)} disabled={isMutating}
+                                      className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50">
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-xs text-muted">{parentLabel(s)}</span>
-                        </td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          {sub
-                            ? <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
-                            : <span className="text-xs text-muted">{subLabel(s)}</span>}
-                        </td>
-                        <td className="px-4 py-3 hidden sm:table-cell">
-                          <span className="text-xs tabular-nums text-muted">{contentCount(s)}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-2">
-                            <button type="button" onClick={() => setModal(s)} disabled={isMutating}
-                              className="p-2 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-50"
-                              style={{ color: GOLD_TEXT }}>
-                              <Pencil size={14} />
-                            </button>
-                            <button type="button" onClick={() => setConfirmDelete(s.id)} disabled={isMutating}
-                              className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
+                          </SortableRow>
+                        );
+                      })}
+                    </tbody>
+                  </SortableContext>
+                </DndContext>
               </table>
             </div>
           )}
         </div>
 
+        <p className="text-xs text-muted">
+          Drag <GripVertical size={11} className="inline -mt-0.5" /> to reorder — this sets the order shown to users.
+        </p>
         <p className="text-xs text-muted">
           {filtered.length} of {scriptures.length} scriptures
           {scriptures.length > 0 ? ` · ${totalVerses} items total` : ''}

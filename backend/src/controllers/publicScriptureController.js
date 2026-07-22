@@ -28,7 +28,7 @@ exports.listScriptures = catchAsync(async (req, res) => {
     ];
   }
 
-  const sortOption = sort === 'popular' ? { popularity: -1 } : { createdAt: -1 };
+  const sortOption = sort === 'popular' ? { popularity: -1 } : { order: 1, createdAt: -1 };
 
   let query = Scripture.find(filter).sort(sortOption);
   if (limit) {
