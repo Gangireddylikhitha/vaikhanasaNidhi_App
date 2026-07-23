@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 
 const DEFAULT_LOCAL_API = 'http://127.0.0.1:5000/api';
-const PRODUCTION_API = 'http://vaikhanasa-api.ap-south-1.elasticbeanstalk.com/api';
+const PRODUCTION_API = 'https://api.vaikhanasanidhi.com/api';
 
 // Call Capacitor directly here (instead of importing from ./native) to avoid a
 // circular import: native.js -> pushNotifications.js -> userApi.js ->
@@ -17,12 +17,7 @@ function isLocalBrowser() {
   return host === 'localhost' || host === '127.0.0.1';
 }
 
-/** Ensure base URL ends with /api (axios routes are like /categories, /auth/login). */
-function normalizeApiBaseUrl(url) {
-  if (!url?.trim()) return '';
-  const trimmed = url.trim().replace(/\/+$/, '');
-  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
-}
+
 
 function resolveApiBaseUrl() {
   const configuredApi = import.meta.env.VITE_API_BASE_URL?.trim();
