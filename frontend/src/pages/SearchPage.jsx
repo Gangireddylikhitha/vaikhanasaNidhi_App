@@ -1,13 +1,21 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { keepPreviousData } from "@tanstack/react-query";
+import { useMutation, keepPreviousData } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, TrendingUp, Hash, LayoutGrid, List, BookOpen, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
+import { Search, X, TrendingUp, Hash, LayoutGrid, List, BookOpen, ChevronLeft, GripVertical } from "lucide-react";
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, rectSortingStrategy, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import ScriptureCard from "../components/ScriptureCard";
 import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
 import { usePublicScriptures } from "../hooks/usePublicScriptures";
 import { usePublicSubcategories } from "../hooks/usePublicSubcategories";
 import { usePublicCategories } from "../hooks/usePublicCategories";
+import { isAdmin } from "../store/authStore";
+import * as scriptureApi from "../api/scriptureApi";
 import {
   getSubcategories,
   resolveBrowseParentKey,
@@ -15,9 +23,32 @@ import {
 import { findMainCategory } from "../utils/categoryLookup";
 import { getScriptureBadgeLabel } from "../utils/scriptureSubcategoryMatch";
 
+function SortableResultItem({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : "auto",
+    position: "relative",
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <button type="button" {...attributes} {...listeners}
+        className="absolute -left-1.5 -top-1.5 z-10 p-1 rounded-full shadow-md text-black cursor-grab active:cursor-grabbing touch-none"
+        style={{ background: "#E4B24B" }}
+        aria-label="Drag to reorder">
+        <GripVertical size={12} />
+      </button>
+      {children}
+    </div>
+  );
+}
+
 const GOLD = "#E4B24B";
 const GOLD_SOLID = "#C88F2D";
 const TRENDING = ["Venkateswara", "Gayatri", "Lakshmi", "Suprabhatam", "Sahasranama", "Mantra", "Narasimha", "Hayagriva"];
+const EMPTY_SCRIPTURES = [];
 
 function mergePublicSubcategories(parentKey, dynamicSubs = []) {
   const staticSubs = getSubcategories(parentKey);
@@ -136,7 +167,7 @@ export default function SearchPage() {
   const showResults = debouncedQuery.trim() || browseMode || activeCat !== "all";
   const listParams = showResults ? apiParams : {};
 
-  const { data: scriptures = [], isLoading, isFetching, isError, refetch } = usePublicScriptures(listParams, {
+  const { data: scriptures = EMPTY_SCRIPTURES, isLoading, isFetching, isError, refetch } = usePublicScriptures(listParams, {
     placeholderData: keepPreviousData,
   });
 
@@ -157,6 +188,41 @@ export default function SearchPage() {
   }
 
   const results = useMemo(() => scriptures, [scriptures]);
+
+  // Admins can drag-reorder scriptures within a subcategory's list; the new
+  // order is saved via the same order field the admin panel's table uses.
+  const canReorder = isAdmin() && browseMode && !debouncedQuery.trim();
+  const [prevResults, setPrevResults] = useState(results);
+  const [orderedResults, setOrderedResults] = useState(results);
+  if (results !== prevResults) {
+    setPrevResults(results);
+    setOrderedResults(results);
+  }
+
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  );
+
+  const reorderMutation = useMutation({
+    mutationFn: scriptureApi.reorderScriptures,
+    onError: () => {
+      toast.error("Could not save the new order — reverted.");
+      setOrderedResults(results);
+    },
+  });
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = orderedResults.map((s) => s.id);
+    const oldIndex = ids.indexOf(active.id);
+    const newIndex = ids.indexOf(over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(orderedResults, oldIndex, newIndex);
+    setOrderedResults(reordered);
+    reorderMutation.mutate(reordered.map((s) => s.id));
+  }
 
   function clearFilters() {
     setQuery("");
@@ -328,13 +394,39 @@ export default function SearchPage() {
                 <span className="text-muted text-xs">
                   {query && <span className="font-semibold gold-glow">"{query}" — </span>}
                   {results.length} results
+                  {canReorder && <span className="ml-2 text-[10px] opacity-70">· drag to reorder</span>}
                 </span>
                 {(query || activeChipKey !== "all") && (
                   <button onClick={clearFilters}
                     className="text-xs underline gold-glow">clear</button>
                 )}
               </div>
-              {view === "list" ? (
+              {canReorder ? (
+                <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={orderedResults.map((s) => s.id)}
+                    strategy={view === "list" ? verticalListSortingStrategy : rectSortingStrategy}
+                  >
+                    {view === "list" ? (
+                      <div className="space-y-2">
+                        {orderedResults.map((s) => (
+                          <SortableResultItem key={s.id} id={s.id}>
+                            <ScriptureRow scripture={s} parentKey={parentKey} subcategories={subcategories} mainCategories={mainCategories} />
+                          </SortableResultItem>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {orderedResults.map((s) => (
+                          <SortableResultItem key={s.id} id={s.id}>
+                            <ScriptureCard scripture={s} onBookmarkChange={() => forceUpdate(n => n + 1)} />
+                          </SortableResultItem>
+                        ))}
+                      </div>
+                    )}
+                  </SortableContext>
+                </DndContext>
+              ) : view === "list" ? (
                 <div className="space-y-2">
                   {results.map((s, i) => (
                     <motion.div key={s.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}

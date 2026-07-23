@@ -18,7 +18,7 @@ export async function syncNativeStatusBar(themeMode = 'dark') {
     await StatusBar.setOverlaysWebView({ overlay: true });
     // Capacitor naming: Style.Dark = light icons (for dark UI); Style.Light = dark icons (for light UI).
     await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
-    await StatusBar.setBackgroundColor({ color: isLight ? '#FAFAF8' : '#0a0a0a' });
+    await StatusBar.setBackgroundColor({ color: isLight ? '#e8e5da' : '#0a0a0a' });
   } catch {
     // Status bar plugin optional during web dev.
   }

@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema(
       fontSize: { type: String, default: 'large' },
       textColor: { type: String, default: 'bright' },
       notifyDailySloka: { type: Boolean, default: true },
-      notifyPanchangam: { type: Boolean, default: false },
+      notifyPanchangam: { type: Boolean, default: true },
       notifyNewContent: { type: Boolean, default: true },
     },
     fcm_tokens: {

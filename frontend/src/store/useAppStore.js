@@ -82,7 +82,7 @@ export function getSettings() {
     fontSize: 'large',
     textColor: 'bright',
     notifyDailySloka: true,
-    notifyPanchangam: false,
+    notifyPanchangam: true,
     notifyNewContent: true,
     ...loadStorage().settings,
   };

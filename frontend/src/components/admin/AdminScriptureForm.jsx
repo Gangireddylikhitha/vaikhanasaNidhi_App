@@ -1,7 +1,12 @@
 import { useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Save, Loader2, ImagePlus, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, ImagePlus, Trash2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { GOLD_TEXT } from '../../constants/adminConstants';
 import SubcategoryCombobox from './SubcategoryCombobox';
 import { uploadScriptureImages } from '../../api/uploadApi';
@@ -11,6 +16,17 @@ const IMAGES_CATEGORY = 'chitralu';
 
 function isImageGalleryCategory(parentKey) {
   return parentKey === IMAGES_CATEGORY;
+}
+
+function SortableImageCard({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : 'auto',
+  };
+  return children({ setNodeRef, style, dragHandleProps: { ...attributes, ...listeners } });
 }
 
 export default function AdminScriptureForm({
@@ -178,6 +194,22 @@ export default function AdminScriptureForm({
     }));
   }
 
+  const imageDragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  );
+
+  function handleImageDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setForm((f) => {
+      const oldIndex = f.images.findIndex((img) => img.url === active.id);
+      const newIndex = f.images.findIndex((img) => img.url === over.id);
+      if (oldIndex === -1 || newIndex === -1) return f;
+      return { ...f, images: arrayMove(f.images, oldIndex, newIndex) };
+    });
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     if (!canSave) return;
@@ -300,21 +332,39 @@ export default function AdminScriptureForm({
                 <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
                 <p className="text-[11px] text-muted mb-3">
                   Images upload as soon as you pick them. Add captions after they appear above.
+                  Drag <GripVertical size={11} className="inline -mt-0.5" /> an image to reorder — this is the order shown to users.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {form.images.map((img, i) => (
-                    <div key={img.url} className="rounded-xl overflow-hidden bg-elevated" style={{ border: '1px solid var(--border-subtle)' }}>
-                      <div className="relative aspect-square">
-                        <img src={img.url} alt="" className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => removeExistingImage(i)}
-                          className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-red-400">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                      <input value={img.caption || ''} onChange={(e) => setExistingCaption(i, e.target.value)}
-                        placeholder="Caption (optional)" className="w-full px-2 py-1.5 text-xs bg-transparent border-t border-[var(--border-subtle)] outline-none" />
+                <DndContext sensors={imageDragSensors} collisionDetection={closestCenter} onDragEnd={handleImageDragEnd}>
+                  <SortableContext items={form.images.map((img) => img.url)} strategy={rectSortingStrategy}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {form.images.map((img, i) => (
+                        <SortableImageCard key={img.url} id={img.url}>
+                          {({ setNodeRef, style, dragHandleProps }) => (
+                            <div ref={setNodeRef} className="rounded-xl overflow-hidden bg-elevated"
+                              style={{ ...style, border: '1px solid var(--border-subtle)' }}>
+                              <div className="relative aspect-square">
+                                <img src={img.url} alt="" className="w-full h-full object-cover" />
+                                <button type="button" {...dragHandleProps}
+                                  className="absolute top-1 left-1 p-1 rounded-md bg-black/60 text-white/90 cursor-grab active:cursor-grabbing touch-none"
+                                  aria-label="Drag to reorder">
+                                  <GripVertical size={14} />
+                                </button>
+                                <button type="button" onClick={() => removeExistingImage(i)}
+                                  className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-red-400">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                              <input value={img.caption || ''} onChange={(e) => setExistingCaption(i, e.target.value)}
+                                placeholder="Caption (optional)"
+                                className="w-full px-2 py-1.5 text-xs bg-transparent border-t border-[var(--border-subtle)] outline-none" />
+                            </div>
+                          )}
+                        </SortableImageCard>
+                      ))}
                     </div>
-                  ))}
+                  </SortableContext>
+                </DndContext>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
                   {pendingFiles.map((item) => (
                     <div key={item.id} className="rounded-xl overflow-hidden bg-elevated" style={{ border: '1px solid var(--border-subtle)' }}>
                       <div className="relative aspect-square">

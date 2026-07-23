@@ -140,8 +140,27 @@ async function resolveScripturePlacement({ category, parent_category, subcategor
 }
 
 exports.listScriptures = catchAsync(async (req, res) => {
-  const scriptures = await Scripture.find().sort({ createdAt: -1 });
+  const scriptures = await Scripture.find().sort({ order: 1, createdAt: -1 });
   res.json(scriptures.map((s) => s.toAdminJSON()));
+});
+
+/** Bulk-assigns sequential `order` values to the ids in the given sequence — used by admin drag-to-reorder. */
+exports.reorderScriptures = catchAsync(async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || !ids.length) {
+    throw new AppError('ids array is required', 400, 'BAD_REQUEST');
+  }
+
+  await Scripture.bulkWrite(
+    ids.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { $set: { order: index } },
+      },
+    }))
+  );
+
+  res.json({ ok: true });
 });
 
 exports.getScripture = catchAsync(async (req, res) => {

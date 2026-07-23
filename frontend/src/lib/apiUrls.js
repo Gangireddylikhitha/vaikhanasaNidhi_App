@@ -52,6 +52,7 @@ export const adminDashboard = '/admin/dashboard';
 export const adminUsers = '/admin/users';
 export const adminScriptures = '/admin/scriptures';
 export const adminScriptureById = (id) => `/admin/scriptures/${id}`;
+export const adminScripturesReorder = '/admin/scriptures/reorder';
 export const adminCategories = '/admin/categories';
 export const adminCategoryById = (id) => `/admin/categories/${id}`;
 export const adminSubcategories = '/admin/subcategories';

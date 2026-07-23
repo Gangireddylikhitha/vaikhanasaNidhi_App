@@ -1,5 +1,5 @@
 import axiosInstance from '../lib/axiosInstance';
-import { adminScriptures, adminScriptureById } from '../lib/apiUrls';
+import { adminScriptures, adminScriptureById, adminScripturesReorder } from '../lib/apiUrls';
 
 export async function fetchScriptures() {
   const { data } = await axiosInstance.get(adminScriptures);
@@ -28,5 +28,10 @@ export async function saveScriptureItem(form) {
 
 export async function deleteScripture(id) {
   const { data } = await axiosInstance.delete(adminScriptureById(id));
+  return data;
+}
+
+export async function reorderScriptures(ids) {
+  const { data } = await axiosInstance.patch(adminScripturesReorder, { ids });
   return data;
 }

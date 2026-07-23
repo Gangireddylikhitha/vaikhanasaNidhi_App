@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { usePanchangam } from '../hooks/usePanchangam';
 import { toIstDateKey } from '../lib/panchangamSource';
 import { brandLogo } from '../constants/brandAssets';
+import { shareCardImage } from '../lib/shareImage';
 import PanchangamDatePicker from '../components/panchangam/PanchangamDatePicker';
 import {
   NithraPage,
@@ -64,6 +65,24 @@ export default function Panchangam() {
     refetch();
   }
   async function share() {
+    if (!p || !n) return;
+    const lines = [
+      `${n.dateDdMmYyyy} — ${n.headerMonthVaaram}`,
+      n.samvatsaraTitle,
+      `తిథి: ${n.tithiLine}`,
+      `నక్షత్రం: ${n.nakshatraLine}`,
+      `సూర్యోదయం: ${n.sunrise}   సూర్యాస్తమయం: ${n.sunset}`,
+      `రాహుకాలం: ${n.rahukalam}`,
+      p.phases?.phase4?.ekadashi ? `ఏకాదశి: ${p.phases.phase4.ekadashi}` : '',
+    ].filter(Boolean);
+
+    try {
+      await shareCardImage({ title: 'నేటి పంచాంగం', lines, dialogTitle: 'పంచాంగం షేర్ చేయండి' });
+      return;
+    } catch {
+      // Image share failed (e.g. plugin unavailable in web dev) — fall back to plain text.
+    }
+
     const text = buildShareText(p, n);
     if (!text) return;
     if (navigator.share) {

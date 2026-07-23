@@ -46,6 +46,7 @@ router.post('/gallery/photos', adminGalleryController.createPhotos);
 router.delete('/gallery/photos/:id', adminGalleryController.deletePhoto);
 
 router.get('/scriptures', adminScriptureController.listScriptures);
+router.patch('/scriptures/reorder', adminScriptureController.reorderScriptures);
 router.get('/scriptures/:id', adminScriptureController.getScripture);
 router.post('/scriptures', adminScriptureController.createScripture);
 router.put('/scriptures/:id', adminScriptureController.updateScripture);
