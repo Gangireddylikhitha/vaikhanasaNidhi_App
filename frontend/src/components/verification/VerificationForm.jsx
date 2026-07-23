@@ -17,6 +17,8 @@ function FieldLabel({ icon: Icon, te, en, required }) {
   );
 }
 
+/**verification form for Vaikhanasa Vedic verification */
+
 export default function VerificationForm({ onSuccess, compact = false }) {
   const [fullName, setFullName] = useState('');
   const [gothram, setGothram] = useState('');
