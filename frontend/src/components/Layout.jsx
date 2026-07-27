@@ -3,7 +3,7 @@ import { isNativeApp } from '../lib/native';
 import { pushNativeBackHandler } from '../lib/nativeBack';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, LogOut, Info, Phone, Shield } from 'lucide-react';
+import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, LogOut, Info, Phone, Shield, Sparkles } from 'lucide-react';
 import SettingsDrawer from './SettingsDrawer';
 import GuestNavLink from './GuestNavLink';
 import { WhatsAppIcon, InstagramIcon } from './SocialLinkIcons';
@@ -22,6 +22,7 @@ const NAV_LINKS = [
 ];
 
 const DRAWER_EXTRA_LINKS = [
+  { to: '/japam', icon: Sparkles, label: 'జపం', en: 'Japam' },
   { to: '/about', icon: Info, label: 'గురించి', en: 'About' },
   { to: '/contact', icon: Phone, label: 'సంప్రదింపు', en: 'Contact' },
 ];

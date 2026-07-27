@@ -289,15 +289,26 @@ export default function AdminGallery() {
                         <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setAlbumModal(album)}
-                      disabled={isMutating}
-                      className="admin-chip-btn btn-ghost w-full justify-center mt-3 disabled:opacity-50"
-                    >
-                      <Pencil size={13} />
-                      <span>Edit photos</span>
-                    </button>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setAlbumModal(album)}
+                        disabled={isMutating}
+                        className="admin-chip-btn btn-ghost flex-1 justify-center disabled:opacity-50"
+                      >
+                        <Pencil size={13} />
+                        <span>Edit photos</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteAlbum(album.id)}
+                        disabled={isMutating}
+                        className="admin-chip-btn justify-center text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                        aria-label="Delete album"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );

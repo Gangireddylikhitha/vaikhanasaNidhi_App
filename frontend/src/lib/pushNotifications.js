@@ -10,9 +10,17 @@ const TOKEN_KEY = 'vaikhanasa-fcm-token';
 let listenersReady = false;
 /** @type {null | ((path: string) => void)} */
 let pushNavHandler = null;
+// A notification tap can arrive (cold start) before PushNavBridge has mounted
+// and registered a handler — hold onto it and replay once one shows up.
+let pendingNavPath = null;
 
 export function setPushNavHandler(handler) {
   pushNavHandler = handler;
+  if (pendingNavPath) {
+    const path = pendingNavPath;
+    pendingNavPath = null;
+    handler(path);
+  }
   return () => {
     if (pushNavHandler === handler) pushNavHandler = null;
   };
@@ -60,7 +68,12 @@ async function ensureListeners() {
 
   await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
     const data = event?.notification?.data || {};
-    pushNavHandler?.(routeFromNotification(data));
+    const path = routeFromNotification(data);
+    if (pushNavHandler) {
+      pushNavHandler(path);
+    } else {
+      pendingNavPath = path;
+    }
   });
 }
 

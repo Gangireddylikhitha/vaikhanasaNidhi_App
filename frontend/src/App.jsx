@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import CategoriesPage from './pages/CategoriesPage';
 import SubcategoryPage from './pages/SubcategoryPage';
 import Gallery from './pages/Gallery';
+import JapamPage from './pages/JapamPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -207,6 +208,7 @@ function AppRoutes({ onLogout }) {
         <Route path="/categories" element={<Guarded><CategoriesPage /></Guarded>} />
         <Route path="/categories/:categoryKey" element={<Guarded><SubcategoryPage /></Guarded>} />
         <Route path="/gallery" element={<Guarded><Gallery /></Guarded>} />
+        <Route path="/japam" element={<Guarded><JapamPage /></Guarded>} />
         <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
         <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
