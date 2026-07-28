@@ -22,6 +22,7 @@ export function useGalleryEvents(options = {}) {
         label_en: s.title_english || s.title_telugu,
         subLabel: sub?.label_te || sub?.label,
         subLabelEn: sub?.label_en,
+        description: s.description || '',
       };
     });
   }, [scripturesQuery.data, subsQuery.data]);

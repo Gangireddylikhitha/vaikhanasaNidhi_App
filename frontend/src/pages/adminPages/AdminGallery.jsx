@@ -289,6 +289,9 @@ export default function AdminGallery() {
                         <AdminBadge label={sub.label_te || sub.label} color={sub.color} />
                       </div>
                     )}
+                    {album.description && (
+                      <p className="text-[11px] text-muted mt-2 line-clamp-2">{album.description}</p>
+                    )}
                     <div className="flex gap-2 mt-3">
                       <button
                         type="button"

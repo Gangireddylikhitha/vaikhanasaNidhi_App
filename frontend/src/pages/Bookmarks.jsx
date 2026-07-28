@@ -6,6 +6,7 @@ import { usePublicScriptures } from "../hooks/usePublicScriptures";
 import { useBookmarks, useBookmarkActions } from "../hooks/useUserData";
 import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
 import ScriptureCard from "../components/ScriptureCard";
+import { getScriptureBadgeLabel } from "../utils/scriptureSubcategoryMatch";
 import { toast } from "sonner";
 
 const GOLD = "#E4B24B";
@@ -99,6 +100,10 @@ export default function Bookmarks() {
                         </span>
                       </div>
                       <div className="min-w-0">
+                        <span className="inline-block rounded-full px-2 py-0.5 font-medium text-xs mb-1"
+                          style={{ background: "#C88F2D22", color: GOLD, border: '1px solid #C88F2D33' }}>
+                          {getScriptureBadgeLabel(s)}
+                        </span>
                         <p className="font-semibold text-sm truncate gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
                           {s.title_telugu}
                         </p>
