@@ -44,7 +44,8 @@ const documentUpload = multer({
 
 const pdfUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 120 * 1024 * 1024 },
+  // Cloudinary's free-plan raw file cap is 100 MB — stay under it.
+  limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter(req, file, cb) {
     const isPdf = isPdfFile(file);
     if (!isPdf) {

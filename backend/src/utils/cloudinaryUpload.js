@@ -21,12 +21,15 @@ function uploadBuffer(buffer, folder, options = {}) {
 
 function uploadRawBuffer(buffer, folder) {
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
+    // Cloudinary caps a single-request upload at 10 MB on this plan; upload_large_stream
+    // sends the file in chunks so larger PDFs (up to the plan's raw-file limit) go through.
+    const stream = cloudinary.uploader.upload_large_stream(
       {
         folder,
         resource_type: 'raw',
         use_filename: true,
         unique_filename: true,
+        chunk_size: 6 * 1024 * 1024,
       },
       (err, result) => {
         if (err) return reject(err);

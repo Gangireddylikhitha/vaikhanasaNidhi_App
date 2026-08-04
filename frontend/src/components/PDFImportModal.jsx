@@ -134,7 +134,7 @@ export default function PDFImportModal({
     } catch (err) {
       pendingFileRef.current = file;
       setShowImageFallback(true);
-      setError(getApiError(err, 'Failed to upload PDF. It may be too large (max 120 MB) or the server upload is not configured.'));
+      setError(getApiError(err, 'Failed to upload PDF. It may be too large (max 100 MB) or the server upload is not configured.'));
       setParseProgress(null);
       setStep('upload');
     }
@@ -504,7 +504,7 @@ export default function PDFImportModal({
                     <>
                       <p className="text-xs text-muted">• Stores only 1 PDF file (not hundreds of images)</p>
                       <p className="text-xs text-muted">• Readers see exact book pages — rendered on device</p>
-                      <p className="text-xs text-muted">• Max PDF size 120 MB · Cloudinary required</p>
+                      <p className="text-xs text-muted">• Max PDF size 100 MB · Cloudinary required</p>
                     </>
                   )}
                 </div>
