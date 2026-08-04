@@ -1,12 +1,18 @@
 import { API_BASE_URL } from './apiUrls';
 
+function isLocalApi() {
+  return API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1');
+}
+
 export function getApiError(error, fallback = 'Something went wrong. Try again.') {
   if (!error?.response) {
     if (error?.code === 'ECONNABORTED') {
-      return 'Request timed out. Check that the backend is running.';
+      return 'Request timed out. The file may be too large or the connection too slow — try again.';
     }
     if (error?.message === 'Network Error' || error?.code === 'ERR_NETWORK') {
-      return `Cannot reach the server at ${API_BASE_URL}. Make sure backend is running: cd backend && npm start`;
+      return isLocalApi()
+        ? `Cannot reach the server at ${API_BASE_URL}. Make sure backend is running: cd backend && npm start`
+        : `Cannot reach the server at ${API_BASE_URL}. Check your internet connection and try again.`;
     }
   }
   return error?.response?.data?.error || error?.message || fallback;
