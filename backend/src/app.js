@@ -4,12 +4,18 @@ const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const deleteAccountPageHtml = require('./deleteAccountPage');
 
 const app = express();
 
 // Respond immediately for Render health checks (before DB is ready)
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'vaikhanasa-nidhi-api' });
+});
+
+// Public page linked from the Play Store "Data safety" account-deletion disclosure
+app.get('/delete-account', (req, res) => {
+  res.type('html').send(deleteAccountPageHtml);
 });
 
 const isDev = process.env.NODE_ENV !== 'production';
