@@ -65,6 +65,7 @@ const userSchema = new mongoose.Schema(
       notifyNewContent: { type: Boolean, default: true },
       notifyFestivals: { type: Boolean, default: true },
     },
+    last_festival_popup_seen: { type: String, default: null },
     fcm_tokens: {
       type: [{
         token: { type: String, required: true },

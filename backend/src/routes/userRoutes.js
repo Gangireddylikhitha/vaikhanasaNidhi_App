@@ -11,6 +11,7 @@ router.get('/me/verification', verificationController.getMyVerification);
 router.post('/me/verification', verificationController.submitVerification);
 
 router.get('/me/data', userController.getUserData);
+router.post('/me/festival-seen', userController.markFestivalPopupSeen);
 router.post('/me/sync', userController.syncLocalData);
 router.get('/me/bookmarks', userController.getBookmarks);
 router.post('/me/bookmarks', userController.addBookmark);

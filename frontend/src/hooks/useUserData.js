@@ -122,6 +122,34 @@ export function useSettingsActions() {
   });
 }
 
+const FESTIVAL_SEEN_LOCAL_KEY = 'vaikhanasa-festival-popup-seen';
+
+export function useMarkFestivalPopupSeen() {
+  const queryClient = useQueryClient();
+  const registered = isRegisteredUser();
+
+  return useMutation({
+    mutationFn: async (dateKey) => {
+      if (registered) return userApi.markFestivalPopupSeenApi();
+      try {
+        localStorage.setItem(FESTIVAL_SEEN_LOCAL_KEY, dateKey);
+      } catch {
+        // localStorage unavailable — popup just won't dedupe across reloads
+      }
+      return { date: dateKey };
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USER_DATA_KEY }),
+  });
+}
+
+export function getLocalFestivalPopupSeenDate() {
+  try {
+    return localStorage.getItem(FESTIVAL_SEEN_LOCAL_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function useProfileUpdate() {
   const queryClient = useQueryClient();
 

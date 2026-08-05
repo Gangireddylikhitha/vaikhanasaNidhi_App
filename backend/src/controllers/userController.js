@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const { getIstDateKey } = require('../utils/dailySloka');
 
 const DEFAULT_SETTINGS = {
   themeMode: 'dark',
@@ -170,7 +171,16 @@ exports.getUserData = catchAsync(async (req, res) => {
     bookmarks: user.bookmarks || [],
     reading_progress: filterReadableProgress(user.reading_progress),
     settings: { ...DEFAULT_SETTINGS, ...(user.settings?.toObject?.() || user.settings || {}) },
+    last_festival_popup_seen: user.last_festival_popup_seen || null,
   });
+});
+
+exports.markFestivalPopupSeen = catchAsync(async (req, res) => {
+  const user = await loadUser(req);
+  const dateKey = getIstDateKey(new Date());
+  user.last_festival_popup_seen = dateKey;
+  await user.save();
+  res.json({ ok: true, date: dateKey });
 });
 
 exports.registerFcmToken = catchAsync(async (req, res) => {

@@ -4,39 +4,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, PartyPopper } from 'lucide-react';
 import { usePanchangam } from '../hooks/usePanchangam';
 import { toIstDateKey } from '../lib/panchangamSource';
+import { isRegisteredUser } from '../store/authStore';
+import { useUserData, useMarkFestivalPopupSeen, getLocalFestivalPopupSeenDate } from '../hooks/useUserData';
 
-const SEEN_KEY = 'vaikhanasa-festival-popup-seen';
 // Same "big enough to interrupt the user" filter as the backend push notification.
 const NOTIFY_CATEGORIES = new Set(['major', 'solar', 'sankranti']);
 
-function wasSeenToday(dateKey) {
-  try {
-    return localStorage.getItem(SEEN_KEY) === dateKey;
-  } catch {
-    return false;
-  }
-}
-
-function markSeenToday(dateKey) {
-  try {
-    localStorage.setItem(SEEN_KEY, dateKey);
-  } catch {
-    // localStorage unavailable (private mode etc.) — popup just won't dedupe across reloads
-  }
-}
-
 export default function FestivalPopup() {
   const navigate = useNavigate();
+  const registered = isRegisteredUser();
   const dateKey = toIstDateKey(new Date());
   const { data } = usePanchangam(new Date());
+  const { data: userData } = useUserData();
+  const markSeen = useMarkFestivalPopupSeen();
   const [dismissed, setDismissed] = useState(false);
 
   const festivals = (data?.festivals || []).filter((f) => NOTIFY_CATEGORIES.has(f.category));
-  const open = festivals.length > 0 && !dismissed && !wasSeenToday(dateKey);
+  const seenDate = registered ? userData?.last_festival_popup_seen : getLocalFestivalPopupSeenDate();
+  const open = festivals.length > 0 && !dismissed && seenDate !== dateKey;
 
   function close() {
-    markSeenToday(dateKey);
     setDismissed(true);
+    markSeen.mutate(dateKey);
   }
 
   function viewPanchangam() {

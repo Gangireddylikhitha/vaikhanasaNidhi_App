@@ -77,6 +77,7 @@ export const galleryPhotos = '/gallery/photos';
 export const panchangam = '/panchangam';
 
 export const userData = '/users/me/data';
+export const userFestivalSeen = '/users/me/festival-seen';
 export const userSync = '/users/me/sync';
 export const userBookmarks = '/users/me/bookmarks';
 export const userBookmarkById = (id) => `/users/me/bookmarks/${id}`;

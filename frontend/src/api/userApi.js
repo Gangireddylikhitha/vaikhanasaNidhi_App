@@ -10,10 +10,16 @@ import {
   userFcmToken,
   userProfile,
   userPassword,
+  userFestivalSeen,
 } from '../lib/apiUrls';
 
 export async function fetchUserData() {
   const { data } = await axiosInstance.get(userData);
+  return data;
+}
+
+export async function markFestivalPopupSeenApi() {
+  const { data } = await axiosInstance.post(userFestivalSeen);
   return data;
 }
 
