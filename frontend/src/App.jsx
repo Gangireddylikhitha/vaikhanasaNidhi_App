@@ -35,6 +35,7 @@ import GuestGuard from './components/GuestGuard';
 import VerificationGuard from './components/VerificationGuard';
 import NativeBackBridge from './components/NativeBackBridge';
 import PushNavBridge from './components/PushNavBridge';
+import FestivalPopup from './components/FestivalPopup';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -176,6 +177,7 @@ function UserLayoutRoute({ onLogout }) {
     <Layout onLogout={onLogout}>
       <NativeBackBridge />
       <PushNavBridge />
+      <FestivalPopup />
       <PostLoginVerificationRedirect />
       <PageWrapper>
         <Outlet />
