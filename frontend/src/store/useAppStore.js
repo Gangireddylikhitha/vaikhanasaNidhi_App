@@ -84,6 +84,7 @@ export function getSettings() {
     notifyDailySloka: true,
     notifyPanchangam: true,
     notifyNewContent: true,
+    notifyFestivals: true,
     ...loadStorage().settings,
   };
 }

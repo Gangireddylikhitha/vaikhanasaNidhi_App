@@ -110,6 +110,7 @@ const DEFAULT_SETTINGS = {
   notifyDailySloka: true,
   notifyPanchangam: true,
   notifyNewContent: true,
+  notifyFestivals: true,
 };
 
 export function getReaderBaseFontSize(fontSize = 'medium') {

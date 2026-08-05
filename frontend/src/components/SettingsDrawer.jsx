@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Type, Bell, Shield, HelpCircle, ChevronRight, Palette, Moon, Sun } from 'lucide-react';
+import { X, Type, Bell, Shield, HelpCircle, ChevronRight, Palette, Moon, Sun, PartyPopper } from 'lucide-react';
 import { getSettings, saveSettings } from '../store/useAppStore';
 import { useUserSettings, useSettingsActions } from '../hooks/useUserData';
 import { applyTheme } from '../lib/theme';
@@ -197,6 +197,8 @@ export default function SettingsDrawer({ open, onClose }) {
                   onChange={v => update('notifyDailySloka', v)} />
                 <ToggleRow icon={Bell} label="Panchangam" value={settings.notifyPanchangam}
                   onChange={v => update('notifyPanchangam', v)} />
+                <ToggleRow icon={PartyPopper} label="Festivals" value={settings.notifyFestivals !== false}
+                  onChange={v => update('notifyFestivals', v)} />
                 <ToggleRow icon={Bell} label="New uploads" value={settings.notifyNewContent !== false}
                   onChange={v => update('notifyNewContent', v)} />
               </Section>

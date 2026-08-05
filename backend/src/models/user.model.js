@@ -63,6 +63,7 @@ const userSchema = new mongoose.Schema(
       notifyDailySloka: { type: Boolean, default: true },
       notifyPanchangam: { type: Boolean, default: true },
       notifyNewContent: { type: Boolean, default: true },
+      notifyFestivals: { type: Boolean, default: true },
     },
     fcm_tokens: {
       type: [{

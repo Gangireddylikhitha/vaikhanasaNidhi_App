@@ -8,7 +8,13 @@ const NOTIFICATION_HOUR = Number(process.env.NOTIFICATION_HOUR_IST) || 6;
 const ANDROID_CHANNEL_ID = process.env.ANDROID_NOTIFICATION_CHANNEL_ID || 'vaikhanasa_daily';
 let lastSlokaDate = null;
 let lastPanchangamDate = null;
+let lastFestivalDate = null;
 let notificationTickInFlight = false;
+
+// Only these panchangam festival categories are "big enough" to warrant a
+// dedicated push — routine ekadashi/pradosham/vrat entries occur ~2x/month
+// each and would make this feel like spam on top of the daily panchangam.
+const FESTIVAL_NOTIFY_CATEGORIES = new Set(['major', 'solar', 'sankranti']);
 
 function collectAndroidTokens(users) {
   return users.flatMap((u) => (u.fcm_tokens || [])
@@ -123,6 +129,43 @@ async function notifyPanchangam() {
   console.log(`[notifications] panchangam sent to ${tokens.length} Android device(s)`);
 }
 
+async function notifyFestivals() {
+  const today = getIstDateKey(new Date());
+  if (lastFestivalDate === today) return;
+
+  const panchang = await getPanchangam(new Date());
+  const festivals = (panchang.festivals || []).filter((f) => FESTIVAL_NOTIFY_CATEGORIES.has(f.category));
+  if (!festivals.length) {
+    lastFestivalDate = today;
+    return;
+  }
+
+  const users = await User.find({
+    'settings.notifyFestivals': true,
+    'fcm_tokens.0': { $exists: true },
+  }).select('fcm_tokens');
+
+  const tokens = collectAndroidTokens(users);
+  if (!tokens.length) {
+    lastFestivalDate = today;
+    return;
+  }
+
+  const names = festivals.map((f) => f.nameTe || f.name);
+  const title = names.length > 1 ? `🪔 ఈరోజు పండుగలు` : `🪔 ఈరోజు ${names[0]}`;
+  const body = (festivals[0].description || names.join(', ')).slice(0, 180);
+
+  await sendToTokens(tokens, {
+    title,
+    body,
+    clickAction: 'OPEN_PANCHANGAM',
+    data: { type: 'festival', date: today, names: names.join(', ') },
+  });
+
+  lastFestivalDate = today;
+  console.log(`[notifications] festival (${names.join(', ')}) sent to ${tokens.length} Android device(s)`);
+}
+
 /**
  * Push when admin uploads new scripture / gallery content.
  * Fire-and-forget from controllers — never blocks the create API.
@@ -174,6 +217,7 @@ async function runScheduledNotifications() {
 
   await notifyDailySloka();
   await notifyPanchangam();
+  await notifyFestivals();
 }
 
 function startNotificationScheduler() {
@@ -202,6 +246,7 @@ module.exports = {
   sendToTokens,
   notifyDailySloka,
   notifyPanchangam,
+  notifyFestivals,
   notifyNewContent,
   notifyNewContentSafe,
   runScheduledNotifications,
