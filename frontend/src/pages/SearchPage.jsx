@@ -313,7 +313,7 @@ export default function SearchPage() {
             placeholder="Search scriptures, mantras, verses..."
             className="form-input search-field-input pr-9 py-2.5"
             style={{ fontFamily: "Tiro Telugu, serif" }}
-            autoFocus />
+            autoFocus={!browseMode} />
           {query && (
             <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white">
               <X size={15} />

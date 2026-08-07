@@ -19,8 +19,8 @@ import { isValidScriptureId } from "../utils/scriptureId";
 import { isLoggedIn, isGuest } from "../store/authStore";
 import GuestNavLink from "../components/GuestNavLink";
 import { useThemeMode } from "../hooks/useThemeMode";
-import vaamira from "../assets/images/vaamira.png";
-import lightVaamira from "../assets/images/lightVaamira.png";
+import darkCompanyLogo from "../assets/images/darkcompany-transparent.png";
+import whiteCompanyLogo from "../assets/images/whiteCompany-transparent.png";
 
 const GOLD = "#E4B24B";
 
@@ -59,7 +59,26 @@ export default function Home() {
       <HeroCard />
       <CategoryGrid />
 
-      <section className="home-widgets px-4 sm:px-6 lg:px-8 mt-8">
+      <section className="px-4 sm:px-6 lg:px-8 mt-8">
+        <GuestNavLink
+          to="/japam"
+          className="gold-card rounded-2xl p-4 flex items-center gap-3 hover:brightness-110 transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: '#C88F2D18', border: '1px solid #C88F2D33' }}>
+            <Sparkles size={18} color={GOLD} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-telugu font-bold text-sm gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
+              జపం చేయండి
+            </p>
+            <p className="text-xs text-muted">Japam Counter — 108 మాల లెక్క పెట్టండి</p>
+          </div>
+          <ChevronRight size={16} className="text-muted flex-shrink-0" />
+        </GuestNavLink>
+      </section>
+
+      <section className="home-widgets px-4 sm:px-6 lg:px-8 mt-6">
         <div className="home-widgets-grid">
           <PanchangamWidget embedded />
           {!guest && (
@@ -241,14 +260,14 @@ export default function Home() {
 
       <footer className="home-footer px-4 sm:px-6 lg:px-8 mt-10 mb-6">
         <div className="home-footer-inner">
+          <p className="home-footer-text home-footer-credit home-footer-designedby">Designed by</p>
           <img
-            src={themeMode === "light" ? lightVaamira : vaamira}
+            src={themeMode === "light" ? whiteCompanyLogo : darkCompanyLogo}
             alt="Vaamira Origins"
             className="home-footer-logo"
             loading="lazy"
           />
           <p className="home-footer-text">© 2026 Vaikhanasa Nidhi. All Rights Reserved.</p>
-          <p className="home-footer-text home-footer-credit">Designed & Developed by vaamira origins</p>
         </div>
       </footer>
     </div>

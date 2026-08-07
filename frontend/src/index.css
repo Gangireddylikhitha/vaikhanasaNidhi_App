@@ -980,6 +980,14 @@ img { max-width: 100%; display: block; }
   color: rgba(228, 178, 75, 0.88);
 }
 
+.home-footer-designedby {
+  margin-top: 0;
+  margin-bottom: 0.35rem;
+  font-size: clamp(0.62rem, 1.7vw, 0.72rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
 [data-theme="light"] .home-footer-text {
   color: rgba(30, 30, 30, 0.76);
 }
