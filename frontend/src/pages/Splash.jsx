@@ -44,7 +44,7 @@ export default function Splash({ onDone }) {
 
           {/* ── rotating outer ring ── */}
           <motion.div
-            className="absolute rounded-full border border-yellow-600/20 pointer-events-none"
+            className="absolute rounded-full border border-yellow-600/40 pointer-events-none"
             style={{ width: 300, height: 300 }}
             animate={{ rotate: 360 }}
             transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
@@ -52,7 +52,7 @@ export default function Splash({ onDone }) {
             {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
               <div
                 key={deg}
-                className="absolute w-1.5 h-1.5 rounded-full bg-yellow-500/60"
+                className="absolute w-1.5 h-1.5 rounded-full bg-yellow-500/80"
                 style={{
                   top: "50%", left: "50%",
                   transform: "rotate(" + deg + "deg) translateX(148px) translateY(-50%)"
@@ -63,7 +63,7 @@ export default function Splash({ onDone }) {
 
           {/* ── counter-rotate inner ring ── */}
           <motion.div
-            className="absolute rounded-full border border-red-800/25 pointer-events-none"
+            className="absolute rounded-full border border-red-800/50 pointer-events-none"
             style={{ width: 230, height: 230 }}
             animate={{ rotate: -360 }}
             transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
@@ -71,7 +71,7 @@ export default function Splash({ onDone }) {
             {[0, 60, 120, 180, 240, 300].map(deg => (
               <div
                 key={deg}
-                className="absolute w-1 h-1 rounded-full bg-red-400/50"
+                className="absolute w-1 h-1 rounded-full bg-red-400/75"
                 style={{
                   top: "50%", left: "50%",
                   transform: "rotate(" + deg + "deg) translateX(113px) translateY(-50%)"
