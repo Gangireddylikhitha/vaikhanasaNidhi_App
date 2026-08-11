@@ -24,9 +24,14 @@ function collectAndroidTokens(users) {
 
 async function sendToTokens(tokens, payload) {
   const messaging = getMessaging();
-  if (!messaging || !tokens.length) return { sent: 0, failed: 0 };
+  console.log(`[notifications] sendToTokens invoked; tokenCount=${tokens?.length || 0}; payloadTitle=${payload?.title || 'n/a'}`);
+  if (!messaging || !tokens.length) {
+    console.warn(`[notifications] skip send: messagingReady=${Boolean(messaging)} tokenCount=${tokens?.length || 0}`);
+    return { sent: 0, failed: 0 };
+  }
 
   const uniqueTokens = [...new Set(tokens.filter(Boolean))];
+  console.log(`[notifications] unique tokenCount=${uniqueTokens.length}`);
   let sent = 0;
   let failed = 0;
 
@@ -37,6 +42,7 @@ async function sendToTokens(tokens, payload) {
 
   for (const chunk of chunks) {
     try {
+      console.log(`[notifications] sending multicast chunk size=${chunk.length}`);
       const response = await messaging.sendEachForMulticast({
         tokens: chunk,
         notification: {
@@ -57,8 +63,20 @@ async function sendToTokens(tokens, payload) {
       });
       sent += response.successCount;
       failed += response.failureCount;
+      console.log(`[notifications] multicast result success=${response.successCount} failure=${response.failureCount} total=${chunk.length}`);
+
+      if (response.responses?.length) {
+        const failedResponses = response.responses.filter((r) => !r.success);
+        if (failedResponses.length) {
+          console.warn(`[notifications] multicast failures=${failedResponses.length}`);
+          failedResponses.slice(0, 3).forEach((item, index) => {
+            console.warn(`[notifications] failure ${index + 1}:`, item.error?.message || item.error || 'unknown');
+          });
+        }
+      }
     } catch (err) {
       console.warn('[notifications] multicast failed:', err.message);
+      console.warn('[notifications] multicast stack:', err.stack);
       failed += chunk.length;
     }
   }
@@ -76,6 +94,7 @@ async function notifyDailySloka() {
   }).select('fcm_tokens');
 
   const tokens = collectAndroidTokens(users);
+  console.log(`[notifications] daily sloka check: users=${users.length} androidTokens=${tokens.length}`);
   if (!tokens.length) {
     lastSlokaDate = today;
     return;
@@ -110,6 +129,7 @@ async function notifyPanchangam() {
   }).select('fcm_tokens');
 
   const tokens = collectAndroidTokens(users);
+  console.log(`[notifications] panchangam check: users=${users.length} androidTokens=${tokens.length}`);
   if (!tokens.length) {
     lastPanchangamDate = today;
     return;
@@ -146,6 +166,7 @@ async function notifyFestivals() {
   }).select('fcm_tokens');
 
   const tokens = collectAndroidTokens(users);
+  console.log(`[notifications] festival check: users=${users.length} androidTokens=${tokens.length} festivals=${festivals.length}`);
   if (!tokens.length) {
     lastFestivalDate = today;
     return;
@@ -179,6 +200,7 @@ async function notifyNewContent({ type, title, body, id, clickAction } = {}) {
   }).select('fcm_tokens');
 
   const tokens = collectAndroidTokens(users);
+  console.log(`[notifications] new content check: users=${users.length} androidTokens=${tokens.length} type=${type || 'content'}`);
   if (!tokens.length) return { sent: 0, failed: 0 };
 
   const payloadTitle = title || 'కొత్త కంటెంట్';
@@ -199,6 +221,7 @@ async function notifyNewContent({ type, title, body, id, clickAction } = {}) {
 }
 
 function notifyNewContentSafe(payload) {
+  console.log('[notifications] notifyNewContentSafe invoked',payload);
   notifyNewContent(payload).catch((err) => {
     console.warn('[notifications] new content failed:', err.message);
   });
@@ -208,13 +231,18 @@ async function runScheduledNotifications() {
   if (!isFirebaseConfigured()) return;
 
   const now = new Date();
+  console.log(`[notifications] scheduler tick at ${now.toISOString()} IST-hour=${NOTIFICATION_HOUR}`);
   const istOffset = 5.5 * 60;
   const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
   const istMinutes = utcMinutes + istOffset;
   const istHour = Math.floor((istMinutes % (24 * 60)) / 60);
 
-  if (istHour !== NOTIFICATION_HOUR) return;
+  if (istHour !== NOTIFICATION_HOUR) {
+    console.log(`[notifications] scheduler skip: currentISTHour=${istHour} targetHour=${NOTIFICATION_HOUR}`);
+    return;
+  }
 
+  console.log(`[notifications] scheduler running for hour=${istHour}`);
   await notifyDailySloka();
   await notifyPanchangam();
   await notifyFestivals();

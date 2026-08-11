@@ -192,6 +192,7 @@ exports.registerFcmToken = catchAsync(async (req, res) => {
 
   const user = await loadUser(req);
   const trimmed = token.trim();
+  console.log(`[notifications] registering FCM token for user=${user._id?.toString?.() || 'unknown'} platform=${platform}`);
   const existing = (user.fcm_tokens || []).filter((t) => t.token !== trimmed);
   user.fcm_tokens = [{
     token: trimmed,
@@ -207,12 +208,13 @@ exports.removeFcmToken = catchAsync(async (req, res) => {
   if (!token?.trim()) throw new AppError('FCM token is required', 400, 'BAD_REQUEST');
 
   const user = await loadUser(req);
+  console.log(`[notifications] removing FCM token for user=${user._id?.toString?.() || 'unknown'}`);
   user.fcm_tokens = (user.fcm_tokens || []).filter((t) => t.token !== token.trim());
   await user.save();
   res.json({ ok: true });
 });
 
-exports.syncLocalData = catchAsync(async (req, res) => {
+exports.syncLocalData = paatchAsync(async (req, res) => {
   const { bookmarks = [], reading_progress = [], settings } = req.body;
   const user = await loadUser(req);
 

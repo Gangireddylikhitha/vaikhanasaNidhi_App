@@ -39,7 +39,11 @@ function initFirebaseAdmin() {
   if (initialized) return messaging;
 
   const serviceAccount = loadServiceAccount();
+  const serviceAccountPath = getServiceAccountPath();
+  console.log(`[firebase] initializing admin SDK; serviceAccountPath=${serviceAccountPath}`);
+
   if (!serviceAccount) {
+    console.warn(`[firebase] no service account found at ${serviceAccountPath}`);
     return null;
   }
 
@@ -56,6 +60,7 @@ function initFirebaseAdmin() {
     messaging = admin.messaging();
     initialized = true;
     console.log(`[firebase] loaded project: ${serviceAccount.project_id}`);
+    console.log(`[firebase] messaging ready: ${Boolean(messaging)}`);
     return messaging;
   } catch (err) {
     console.warn('[firebase] init failed:', err.message);
