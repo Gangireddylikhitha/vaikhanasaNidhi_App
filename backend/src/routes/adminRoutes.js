@@ -14,6 +14,7 @@ const router = express.Router();
 router.use(authenticate, requireAdmin);
 
 router.get('/dashboard', adminDashboardController.getDashboard);
+router.post('/test-notification', adminDashboardController.testPushNotification);
 router.get('/users', adminUserController.listUsers);
 
 router.get('/verification', adminVerificationController.listApplications);

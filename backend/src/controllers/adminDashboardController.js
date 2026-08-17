@@ -58,3 +58,34 @@ exports.getDashboard = catchAsync(async (req, res) => {
     approvedVerifications,
   });
 });
+
+exports.testPushNotification = catchAsync(async (req, res) => {
+  const { title = '🕉️ వైఖానస నిధి — పరీక్ష!', body = 'మీ పరికరంలో నోటిఫికేషన్‌లు విజయవంతంగా పనిచేస్తున్నాయి!' } = req.body;
+  const { isFirebaseConfigured } = require('../config/firebase');
+  const { sendToTokens } = require('../services/notificationService');
+
+  if (!isFirebaseConfigured()) {
+    return res.status(500).json({
+      ok: false,
+      error: 'Firebase is not configured on this server (missing service account credentials in FIREBASE_SERVICE_ACCOUNT_JSON)',
+    });
+  }
+
+  const users = await User.find({ 'fcm_tokens.0': { $exists: true } }).select('fcm_tokens username');
+  const tokens = users.flatMap((u) => (u.fcm_tokens || []).filter((t) => t.platform === 'android').map((t) => t.token));
+
+  const result = await sendToTokens(tokens, {
+    title,
+    body,
+    clickAction: 'OPEN_APP',
+    data: { type: 'test_notification' },
+  });
+
+  res.json({
+    ok: true,
+    userCount: users.length,
+    androidTokenCount: tokens.length,
+    result,
+  });
+});
+
