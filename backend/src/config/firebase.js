@@ -16,6 +16,20 @@ function getServiceAccountPath() {
 }
 
 function loadServiceAccount() {
+  const base64Env = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (base64Env) {
+    try {
+      const decoded = Buffer.from(base64Env, 'base64').toString('utf8');
+      const parsed = JSON.parse(decoded);
+      if (parsed.private_key && typeof parsed.private_key === 'string') {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+      }
+      return parsed;
+    } catch (err) {
+      console.warn('[firebase] FIREBASE_SERVICE_ACCOUNT_BASE64 parse failed:', err.message);
+    }
+  }
+
   const jsonEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (jsonEnv) {
     try {
