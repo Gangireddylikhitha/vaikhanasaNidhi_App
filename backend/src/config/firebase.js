@@ -7,12 +7,17 @@ let initialized = false;
 
 function getServiceAccountPath() {
   const configured = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  if (configured) {
-    return path.isAbsolute(configured)
+  if (configured && !configured.trim().startsWith('{')) {
+    const customPath = path.isAbsolute(configured)
       ? configured
       : path.join(__dirname, '../..', configured);
+    if (fs.existsSync(customPath)) return customPath;
   }
-  return path.join(__dirname, '../../firebase-service-account.json');
+  const defaultPath = path.join(__dirname, '../../firebase-service-account.json');
+  if (fs.existsSync(defaultPath)) return defaultPath;
+  const cwdPath = path.join(process.cwd(), 'firebase-service-account.json');
+  if (fs.existsSync(cwdPath)) return cwdPath;
+  return defaultPath;
 }
 
 function loadServiceAccount() {
