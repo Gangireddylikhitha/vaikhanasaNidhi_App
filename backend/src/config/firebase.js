@@ -30,7 +30,7 @@ function loadServiceAccount() {
     }
   }
 
-  const jsonEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const jsonEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || (process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim().startsWith('{') ? process.env.FIREBASE_SERVICE_ACCOUNT_PATH : null);
   if (jsonEnv) {
     try {
       const parsed = JSON.parse(jsonEnv);
@@ -40,7 +40,6 @@ function loadServiceAccount() {
       return parsed;
     } catch (err) {
       console.warn('[firebase] FIREBASE_SERVICE_ACCOUNT_JSON parse failed:', err.message);
-      return null;
     }
   }
 
