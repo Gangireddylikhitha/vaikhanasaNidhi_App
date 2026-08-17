@@ -7,7 +7,7 @@ let initialized = false;
 
 function getServiceAccountPath() {
   const configured = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  if (configured && !configured.trim().startsWith('{')) {
+  if (configured && configured !== 'none' && !configured.trim().startsWith('{')) {
     const customPath = path.isAbsolute(configured)
       ? configured
       : path.join(__dirname, '../..', configured);
