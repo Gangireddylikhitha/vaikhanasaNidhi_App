@@ -214,7 +214,7 @@ exports.removeFcmToken = catchAsync(async (req, res) => {
   res.json({ ok: true });
 });
 
-exports.syncLocalData = paatchAsync(async (req, res) => {
+exports.syncLocalData = catchAsync(async (req, res) => {
   const { bookmarks = [], reading_progress = [], settings } = req.body;
   const user = await loadUser(req);
 
