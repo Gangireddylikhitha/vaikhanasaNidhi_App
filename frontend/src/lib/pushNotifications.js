@@ -27,7 +27,7 @@ export function setPushNavHandler(handler) {
 }
 
 function canRegisterPush() {
-  return isLoggedIn() && !isGuest() && !isAdmin();
+  return isLoggedIn() && !isGuest();
 }
 
 function routeFromNotification(data = {}) {

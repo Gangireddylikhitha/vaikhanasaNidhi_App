@@ -19,7 +19,11 @@ function loadServiceAccount() {
   const jsonEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (jsonEnv) {
     try {
-      return JSON.parse(jsonEnv);
+      const parsed = JSON.parse(jsonEnv);
+      if (parsed.private_key && typeof parsed.private_key === 'string') {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+      }
+      return parsed;
     } catch (err) {
       console.warn('[firebase] FIREBASE_SERVICE_ACCOUNT_JSON parse failed:', err.message);
       return null;
@@ -32,7 +36,11 @@ function loadServiceAccount() {
   }
 
   // eslint-disable-next-line import/no-dynamic-require, global-require
-  return require(serviceAccountPath);
+  const loaded = require(serviceAccountPath);
+  if (loaded && loaded.private_key && typeof loaded.private_key === 'string') {
+    loaded.private_key = loaded.private_key.replace(/\\n/g, '\n');
+  }
+  return loaded;
 }
 
 function initFirebaseAdmin() {
