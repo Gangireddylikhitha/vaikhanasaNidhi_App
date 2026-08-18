@@ -3,9 +3,7 @@ name: Deploy Backend to AWS Elastic Beanstalk
 on:
   push:
     branches:
-      - main
-      - master
-      - chaithra
+      - deployment
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
@@ -13,7 +11,7 @@ on:
 
 jobs:
   deploy:
-    name: Build & Deploy Backend
+    name: Build & Deploy Backend (AWS EB)
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +29,19 @@ jobs:
         working-directory: ./backend
         run: npm ci --omit=dev
 
+      # Optional: inject Firebase service account if provided in GitHub Secrets
+      - name: Inject Firebase Service Account
+        working-directory: ./backend
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > firebase-service-account.json
+            echo "firebase-service-account.json written from GitHub Secrets."
+          else
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON secret not provided; keeping existing file if packaged."
+          fi
+
       - name: Generate Deployment Package
         working-directory: ./backend
         run: |
@@ -38,8 +49,7 @@ jobs:
             -x "*.git*" \
             -x "*.env*" \
             -x "tests/*" \
-            -x "node_modules/*" \
-            -x "firebase-service-account.json"
+            -x "node_modules/*"
 
       - name: Deploy to AWS Elastic Beanstalk
         if: ${{ env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
@@ -57,7 +67,7 @@ jobs:
           deployment_package: deploy-backend-${{ github.sha }}.zip
           wait_for_environment_recovery: 200
 
-      - name: Upload Deployment Artifact (for manual download/fallback)
+      - name: Upload Deployment Artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-deployment-zip

@@ -1,11 +1,11 @@
-name: Build Android App
+name: Build Android App (APK & AAB)
 
 on:
   push:
     branches:
-      - main
-      - master
+      - deployment
       - chaithra
+      - main
     paths:
       - 'frontend/**'
       - '.github/workflows/android-build.yml'
@@ -14,16 +14,16 @@ on:
       build_type:
         description: 'Build Type'
         required: true
-        default: 'debug_apk'
+        default: 'both'
         type: choice
         options:
-          - 'debug_apk'
-          - 'release_bundle'
           - 'both'
+          - 'release_bundle'
+          - 'debug_apk'
 
 jobs:
   build:
-    name: Build Android APK / AAB
+    name: Build Android (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
     steps:
@@ -64,7 +64,7 @@ jobs:
         run: chmod +x gradlew
 
       # Optional: Decode release keystore if provided in GitHub Secrets
-      - name: Prepare Keystore
+      - name: Prepare Keystore (for signed Play Store releases)
         working-directory: ./frontend/android
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -76,9 +76,9 @@ jobs:
             echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/release.keystore
             printf "storeFile=app/release.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n" \
               "$ANDROID_STORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" > keystore.properties
-            echo "Keystore configured successfully."
+            echo "Release Keystore configured successfully."
           else
-            echo "No keystore secret provided, skipping release signing configuration."
+            echo "No keystore secret provided; building standard bundle."
           fi
 
       # Optional: Add google-services.json if provided in GitHub Secrets
@@ -89,18 +89,18 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
             echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > google-services.json
-            echo "google-services.json injected."
-          else
-            echo "No google-services.json secret provided."
+            echo "google-services.json injected from GitHub Secrets."
           fi
 
+      # Build Debug APK
       - name: Build Debug APK
         if: ${{ github.event_name == 'push' || github.event.inputs.build_type == 'debug_apk' || github.event.inputs.build_type == 'both' || github.event.inputs.build_type == '' }}
         working-directory: ./frontend/android
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Build Release Bundle (AAB for Play Store)
-        if: ${{ github.event.inputs.build_type == 'release_bundle' || github.event.inputs.build_type == 'both' }}
+      # Build Release Bundle (AAB for Google Play Store)
+      - name: Build Release Bundle (AAB for Google Play)
+        if: ${{ github.ref_name == 'deployment' || github.event.inputs.build_type == 'release_bundle' || github.event.inputs.build_type == 'both' }}
         working-directory: ./frontend/android
         run: ./gradlew bundleRelease --stacktrace
 
@@ -112,10 +112,10 @@ jobs:
           path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
 
-      - name: Upload Release Bundle (AAB)
-        if: ${{ github.event.inputs.build_type == 'release_bundle' || github.event.inputs.build_type == 'both' }}
+      - name: Upload Release Bundle (AAB for Play Store)
+        if: ${{ github.ref_name == 'deployment' || github.event.inputs.build_type == 'release_bundle' || github.event.inputs.build_type == 'both' }}
         uses: actions/upload-artifact@v4
         with:
           name: vaikhanasa-nidhi-release-aab
-          path: frontend/android/app/build/outputs/bundle/release/app-release.aab
+          path: frontend/android/app/build/outputs/bundle/release/*.aab
           retention-days: 30

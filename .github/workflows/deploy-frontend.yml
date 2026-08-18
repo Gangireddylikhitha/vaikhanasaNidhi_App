@@ -3,9 +3,7 @@ name: Build & Verify Frontend
 on:
   push:
     branches:
-      - main
-      - master
-      - chaithra
+      - deployment
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
