@@ -56,6 +56,17 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Verify Java Configuration
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          if [ -f "$HOME/.gradle/gradle.properties" ]; then
+            cat "$HOME/.gradle/gradle.properties"
+          else
+            echo "No user gradle.properties found."
+          fi
+
+     
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
