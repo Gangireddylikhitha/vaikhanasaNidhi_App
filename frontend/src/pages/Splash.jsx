@@ -116,7 +116,7 @@ export default function Splash({ onDone }) {
               <p
                 className="gold-gradient-text font-telugu text-xl font-medium tracking-normal leading-tight"
               >
-                వైఖానస మహాగురవే నమః
+                విఖానస మహాగురవే నమః
               </p>
               <p className="text-muted text-xs tracking-[0.3em] mt-1 uppercase">Sacred Scripture Library</p>
             </motion.div>

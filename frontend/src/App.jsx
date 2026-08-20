@@ -25,6 +25,7 @@ import LoginPage from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
 import SahasranamamTodayPage from './pages/SahasranamamTodayPage';
 import SahasranamamAllPage from './pages/SahasranamamAllPage';
+import SupportPage from './pages/SupportPage';
 import { hasSeenOnboarding, getSettings } from './store/useAppStore';
 import { isLoggedIn, isAdmin, isRegisteredUser, isVerifiedUser } from './store/authStore';
 import { applyTheme } from './lib/theme';
@@ -213,6 +214,8 @@ function AppRoutes({ onLogout }) {
         <Route path="/japam" element={<Guarded><JapamPage /></Guarded>} />
         <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
         <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/donate" element={<SupportPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       </Route>
     </Routes>

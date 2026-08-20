@@ -11,6 +11,7 @@ import { useMe } from "../hooks/useAuth";
 import { useReadingProgress, useBookmarks, useProfileUpdate, useDeleteAccount } from "../hooks/useUserData";
 import { getAuth, isRegisteredUser } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
+import SupportCard from "../components/SupportCard";
 
 const GOLD = "#E4B24B";
 const GOLD_SOLID = "#C88F2D";
@@ -222,6 +223,11 @@ export default function Profile() {
               })}
             </div>
           )}
+        </section>
+
+        {/* Support & Contribution */}
+        <section className="mt-8">
+          <SupportCard />
         </section>
 
         {registered && (

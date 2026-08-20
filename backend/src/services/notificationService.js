@@ -35,6 +35,17 @@ async function sendToTokens(tokens, payload) {
   let sent = 0;
   let failed = 0;
 
+  const dataPayload = {};
+  if (payload.data && typeof payload.data === 'object') {
+    for (const [key, value] of Object.entries(payload.data)) {
+      if (value !== undefined && value !== null) {
+        dataPayload[key] = String(value);
+      }
+    }
+  }
+  const clickAction = String(payload.clickAction || 'OPEN_APP');
+  dataPayload.click_action = clickAction;
+
   const chunks = [];
   for (let i = 0; i < uniqueTokens.length; i += 500) {
     chunks.push(uniqueTokens.slice(i, i + 500));
@@ -49,15 +60,12 @@ async function sendToTokens(tokens, payload) {
           title: payload.title,
           body: payload.body,
         },
-        data: {
-          ...(payload.data || {}),
-          click_action: payload.clickAction || 'OPEN_APP',
-        },
+        data: dataPayload,
         android: {
           priority: 'high',
           notification: {
             channelId: ANDROID_CHANNEL_ID,
-            clickAction: payload.clickAction || 'OPEN_APP',
+            clickAction,
           },
         },
       });
@@ -110,7 +118,8 @@ async function notifyDailySloka() {
     clickAction: 'OPEN_DAILY_SLOKA',
     data: {
       type: 'daily_sloka',
-      date: today,
+      route: '/sahasranamam/today',
+      date: String(today),
       index: String(sloka.index),
     },
   });
@@ -142,7 +151,11 @@ async function notifyPanchangam() {
     title: 'నేటి పంచాంగం',
     body: body.slice(0, 180),
     clickAction: 'OPEN_PANCHANGAM',
-    data: { type: 'panchangam', date: today },
+    data: {
+      type: 'panchangam',
+      route: '/panchangam',
+      date: String(today),
+    },
   });
 
   lastPanchangamDate = today;
@@ -180,7 +193,12 @@ async function notifyFestivals() {
     title,
     body,
     clickAction: 'OPEN_PANCHANGAM',
-    data: { type: 'festival', date: today, names: names.join(', ') },
+    data: {
+      type: 'festival',
+      route: '/panchangam',
+      date: String(today),
+      names: names.join(', '),
+    },
   });
 
   lastFestivalDate = today;
@@ -206,12 +224,17 @@ async function notifyNewContent({ type, title, body, id, clickAction } = {}) {
   const payloadTitle = title || 'కొత్త కంటెంట్';
   const payloadBody = (body || 'వైఖానస నిధిలో కొత్త విషయం జోడించబడింది').slice(0, 180);
 
+  const route = type === 'new_gallery' || clickAction === 'OPEN_GALLERY'
+    ? '/gallery'
+    : (id ? `/read/${id}` : '/categories');
+
   const result = await sendToTokens(tokens, {
     title: payloadTitle,
     body: payloadBody,
     clickAction: clickAction || 'OPEN_APP',
     data: {
       type: type || 'new_content',
+      route,
       ...(id ? { id: String(id) } : {}),
     },
   });

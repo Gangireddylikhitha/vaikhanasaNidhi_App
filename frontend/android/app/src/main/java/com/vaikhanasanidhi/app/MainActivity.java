@@ -1,10 +1,17 @@
 package com.vaikhanasanidhi.app;
 
+import android.content.Intent;
 import android.webkit.WebView;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+  @Override
+  public void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    setIntent(intent);
+  }
+
   @Override
   public void onStart() {
     super.onStart();
@@ -27,5 +34,6 @@ public class MainActivity extends BridgeActivity {
     webView.setHorizontalScrollBarEnabled(false);
     webView.setNestedScrollingEnabled(true);
     webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
+    webView.setLongClickable(false);
   }
 }

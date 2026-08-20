@@ -5,6 +5,7 @@ import { ChevronRight, Sparkles, BookOpen, Info, Phone } from "lucide-react";
 import HeroCard from "../components/home/HeroCard";
 import CategoryGrid from "../components/home/CategoryGrid";
 import PanchangamWidget from "../components/home/PanchangamWidget";
+import SupportCard from "../components/SupportCard";
 import ScriptureCard from "../components/ScriptureCard";
 import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
 import { usePublicCategories } from "../hooks/usePublicCategories";
@@ -88,6 +89,7 @@ export default function Home() {
               </h3>
               <div className="space-y-1">
                 {[
+                  { to: "/support", label: "సేవా సహకారం" },
                   { to: "/panchangam", label: "Today Panchangam" },
                   { to: "/search", label: "Mantras" },
                   { to: "/categories", label: "All Categories" },
@@ -110,6 +112,11 @@ export default function Home() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* Support & Contribution Section */}
+      <section className="px-4 sm:px-6 lg:px-8 mt-8">
+        <SupportCard />
       </section>
 
       {!guest && continueReading.length > 0 && (

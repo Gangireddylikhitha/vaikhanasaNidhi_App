@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import vaikhanasaGuru from '../assets/images/vaikhanasaGuru.png';
+import SupportCard from '../components/SupportCard';
 
 const ABOUT_POINTS = [
   'వైఖానస నిధి అనేది వైఖానస సంప్రదాయ పవిత్ర జ్ఞానాన్ని డిజిటల్ రూపంలో సంరక్షించి, అందరికీ సులభంగా అందుబాటులో ఉంచే భక్తి డిజిటల్ వేదిక.',
@@ -33,7 +34,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 max-w-2xl mx-auto">
+      <div className="px-4 sm:px-6 max-w-2xl mx-auto space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -68,6 +69,9 @@ export default function AboutPage() {
             <span className="gold-glow">— వైఖానస నిధి బృందం</span>
           </p>
         </motion.div>
+
+        {/* Support & Contribution */}
+        <SupportCard />
       </div>
     </div>
   );

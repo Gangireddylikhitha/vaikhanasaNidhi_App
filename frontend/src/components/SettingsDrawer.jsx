@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Type, Bell, Shield, HelpCircle, ChevronRight, Palette, Moon, Sun, PartyPopper } from 'lucide-react';
+import { X, Type, Bell, Shield, HelpCircle, ChevronRight, Palette, Moon, Sun, PartyPopper, HeartHandshake } from 'lucide-react';
 import { getSettings, saveSettings } from '../store/useAppStore';
 import { useUserSettings, useSettingsActions } from '../hooks/useUserData';
 import { applyTheme } from '../lib/theme';
@@ -204,6 +204,7 @@ export default function SettingsDrawer({ open, onClose }) {
               </Section>
 
               <Section title="About">
+                <LinkRow icon={HeartHandshake} label="సేవా సహకారం" onClick={() => { onClose(); navigate('/support'); }} />
                 <LinkRow icon={Shield} label="Privacy policy" onClick={() => { onClose(); navigate('/privacy-policy'); }} />
                 <LinkRow icon={HelpCircle} label="Help & support" onClick={() => { onClose(); navigate('/contact'); }} />
               </Section>

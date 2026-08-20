@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, User, Phone, Mail } from 'lucide-react';
+import SupportCard from '../components/SupportCard';
 
 const GOLD = '#C88F2D';
 
@@ -64,6 +65,9 @@ export default function ContactPage() {
           <ContactRow icon={Mail} label="జిమెయిల్" value={CONTACT.email} href={`mailto:${CONTACT.email}`} />
         </motion.div>
 
+        {/* Support & Contribution */}
+        <SupportCard />
+
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -76,7 +80,6 @@ export default function ContactPage() {
             <p className="text-sm leading-relaxed text-secondary" style={{ fontFamily: 'Tiro Telugu, serif' }}>
               {FEEDBACK_TEXT}
             </p>
-          
           </div>
         </motion.div>
       </div>

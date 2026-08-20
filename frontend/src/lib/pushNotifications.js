@@ -7,20 +7,33 @@ import { registerFcmTokenApi, removeFcmTokenApi } from '../api/userApi';
 const CHANNEL_ID = 'vaikhanasa_daily';
 const TOKEN_KEY = 'vaikhanasa-fcm-token';
 
+const PENDING_NAV_KEY = 'vaikhanasa_pending_push_nav';
+
 let listenersReady = false;
 /** @type {null | ((path: string) => void)} */
 let pushNavHandler = null;
-// A notification tap can arrive (cold start) before PushNavBridge has mounted
-// and registered a handler — hold onto it and replay once one shows up.
 let pendingNavPath = null;
 
 export function setPushNavHandler(handler) {
   pushNavHandler = handler;
-  if (pendingNavPath) {
-    const path = pendingNavPath;
+  const storedPath = sessionStorage.getItem(PENDING_NAV_KEY);
+  const path = pendingNavPath || storedPath;
+
+  if (path && path !== '/') {
     pendingNavPath = null;
-    handler(path);
+    sessionStorage.removeItem(PENDING_NAV_KEY);
+    // Defer slightly to ensure the router and layout outlet are fully active
+    setTimeout(() => {
+      if (pushNavHandler) {
+        try {
+          pushNavHandler(path);
+        } catch (err) {
+          console.warn('[push] failed to navigate to path:', path, err);
+        }
+      }
+    }, 100);
   }
+
   return () => {
     if (pushNavHandler === handler) pushNavHandler = null;
   };
@@ -30,20 +43,68 @@ function canRegisterPush() {
   return isLoggedIn() && !isGuest();
 }
 
-function routeFromNotification(data = {}) {
-  const type = String(data.type || '');
-  const action = String(data.click_action || '');
+export function routeFromNotification(data = {}) {
+  if (!data) return '/';
 
-  if (type === 'daily_sloka' || action === 'OPEN_DAILY_SLOKA') return '/sahasranamam/today';
-  if (type === 'panchangam' || action === 'OPEN_PANCHANGAM') return '/panchangam';
-  if (type === 'gallery' || action === 'OPEN_GALLERY') return '/gallery';
+  let raw = data;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      raw = {};
+    }
+  }
+
+  // Check explicit route path first
+  if (typeof raw.route === 'string' && raw.route.trim().startsWith('/')) {
+    return raw.route.trim();
+  }
+
+  const type = String(raw.type || raw.notification_type || raw.tag || '').toLowerCase().trim();
+  const action = String(raw.click_action || raw.clickAction || raw.action || '').toUpperCase().trim();
+  const id = raw.id || raw.scripture_id || raw.scriptureId;
+
+  if (
+    type === 'panchangam'
+    || type === 'panchang'
+    || type === 'daily_panchangam'
+    || type === 'festival'
+    || action === 'OPEN_PANCHANGAM'
+    || action.includes('PANCHANGAM')
+  ) {
+    return '/panchangam';
+  }
+
+  if (
+    type === 'daily_sloka'
+    || type === 'sloka'
+    || type === 'sahasranamam'
+    || action === 'OPEN_DAILY_SLOKA'
+    || action.includes('SLOKA')
+  ) {
+    return '/sahasranamam/today';
+  }
+
+  if (
+    type === 'gallery'
+    || type === 'new_gallery'
+    || action === 'OPEN_GALLERY'
+    || action.includes('GALLERY')
+  ) {
+    return '/gallery';
+  }
+
   if (
     action === 'OPEN_SCRIPTURE'
+    || action.includes('SCRIPTURE')
     || type === 'new_content'
     || type === 'scripture'
+    || type === 'new_scripture'
   ) {
-    if (data.id) return `/read/${data.id}`;
+    if (id) return `/read/${id}`;
+    return '/categories';
   }
+
   return '/';
 }
 
@@ -67,12 +128,33 @@ async function ensureListeners() {
   });
 
   await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
-    const data = event?.notification?.data || {};
-    const path = routeFromNotification(data);
-    if (pushNavHandler) {
-      pushNavHandler(path);
-    } else {
-      pendingNavPath = path;
+    console.log('[push] pushNotificationActionPerformed event:', event);
+    const notif = event?.notification || {};
+    let dataPayload = notif.data || event?.data || {};
+
+    if (typeof dataPayload === 'string') {
+      try {
+        dataPayload = JSON.parse(dataPayload);
+      } catch {
+        dataPayload = {};
+      }
+    }
+
+    const merged = {
+      ...notif,
+      ...(typeof dataPayload === 'object' && dataPayload !== null ? dataPayload : {}),
+    };
+
+    const path = routeFromNotification(merged);
+    console.log('[push] resolved notification route:', path);
+
+    if (path && path !== '/') {
+      sessionStorage.setItem(PENDING_NAV_KEY, path);
+      if (pushNavHandler) {
+        pushNavHandler(path);
+      } else {
+        pendingNavPath = path;
+      }
     }
   });
 }

@@ -3,7 +3,7 @@ import { isNativeApp } from '../lib/native';
 import { pushNativeBackHandler } from '../lib/nativeBack';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, LogOut, Info, Phone, Shield, Sparkles } from 'lucide-react';
+import { Home, Search, Bookmark, Calendar, User, Menu, X, Settings, LogOut, Info, Phone, Shield, Sparkles, HeartHandshake } from 'lucide-react';
 import SettingsDrawer from './SettingsDrawer';
 import GuestNavLink from './GuestNavLink';
 import { WhatsAppIcon, InstagramIcon } from './SocialLinkIcons';
@@ -23,6 +23,7 @@ const NAV_LINKS = [
 
 const DRAWER_EXTRA_LINKS = [
   { to: '/japam', icon: Sparkles, label: 'జపం', en: 'Japam' },
+  { to: '/support', icon: HeartHandshake, label: ' సేవా సహకారం ', en: 'Support' },
   { to: '/about', icon: Info, label: 'గురించి', en: 'About' },
   { to: '/contact', icon: Phone, label: 'సంప్రదింపు', en: 'Contact' },
 ];
@@ -300,23 +301,35 @@ export default function Layout({ children, onLogout }) {
                     </GuestNavLink>
                   ))}
                   <div className="my-2 h-px" style={{ background: 'var(--border-subtle)' }} />
-                  {DRAWER_EXTRA_LINKS.map(({ to, icon: Icon, label }) => (
-                    <GuestNavLink
-                      key={to}
-                      to={to}
-                      onClick={() => setDrawerOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-telugu text-sm transition-all w-full text-left"
-                      style={{
-                        background: isActive(to) ? '#C88F2D18' : 'transparent',
-                        color: isActive(to) ? GOLD : 'var(--text-primary)',
-                        fontFamily: 'Tiro Telugu, serif',
-                        textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : '0 0 10px rgba(228,178,75,0.08)',
-                      }}
-                    >
-                      <Icon size={18} />
-                      {label}
-                    </GuestNavLink>
-                  ))}
+                  {DRAWER_EXTRA_LINKS.map(({ to, icon: Icon, label }) => {
+                    const isSupport = to === '/support';
+                    return (
+                      <GuestNavLink
+                        key={to}
+                        to={to}
+                        onClick={() => setDrawerOpen(false)}
+                        className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-telugu text-sm transition-all w-full text-left ${
+                          isSupport && !isActive(to) ? 'border border-amber-500/30' : ''
+                        }`}
+                        style={{
+                          background: isActive(to) ? '#C88F2D25' : isSupport ? 'rgba(200, 143, 45, 0.12)' : 'transparent',
+                          color: isActive(to) || isSupport ? GOLD : 'var(--text-primary)',
+                          fontFamily: 'Tiro Telugu, serif',
+                          textShadow: isActive(to) ? '0 0 10px rgba(228,178,75,0.35)' : '0 0 10px rgba(228,178,75,0.08)',
+                        }}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon size={18} color={isSupport ? GOLD : undefined} />
+                          {label}
+                        </span>
+                        {isSupport && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            UPI
+                          </span>
+                        )}
+                      </GuestNavLink>
+                    );
+                  })}
                 </nav>
                 <div className="border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                   <SocialSidebarLinks onNavigate={() => setDrawerOpen(false)} />
