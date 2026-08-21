@@ -198,7 +198,7 @@ export default function VerificationPage() {
               <BilingualLabel te="సేవకుని పూర్తి పేరు" en="FULL NAME" icon={User} required />
               <input className="verification-input" value={form.full_name}
                 onChange={(e) => setField('full_name', e.target.value)}
-                placeholder="Likhitha Gangireddy" required />
+                placeholder="పూర్తి పేరు" required />
             </div>
             <div>
               <BilingualLabel te="గోత్రము" en="GOTHRAM" icon={Landmark} required />
