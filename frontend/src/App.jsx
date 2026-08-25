@@ -67,6 +67,7 @@ function PageWrapper({ children }) {
     </AnimatePresence>
   );
 }
+// hello
 
 function AppContent() {
   const [phase, setPhase] = useState('splash');
