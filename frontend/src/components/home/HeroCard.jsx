@@ -2,11 +2,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, BookOpen, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
-import { DAILY_SLOKAS } from "../../data/scriptures";
+import { useDailySloka } from "../../hooks/useDailySloka";
+import { sahasranamTodayPath, sahasranamAllPath } from "../../utils/sahasranamLink";
 import heroImg from "../../assets/images/heroImg.png";
 
 export default function HeroCard() {
-  const sloka = DAILY_SLOKAS[0];
+  const { data: sloka } = useDailySloka();
+  const todayPath = sahasranamTodayPath();
+  const allPath = sahasranamAllPath();
+  const slokaIndex = sloka?.index;
   const [open, setOpen] = useState(false);
   const [showMeaning, setShowMeaning] = useState(false);
 
@@ -21,7 +25,7 @@ export default function HeroCard() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="hero-card mx-3 sm:mx-6 lg:mx-8 mt-4 sm:mt-6 lg:mt-8"
+        className="hero-card mx-3 sm:mx-6 lg:mx-8 mt-2 sm:mt-6 lg:mt-8"
       >
         <div className="hero-card-shell rounded-2xl sm:rounded-3xl overflow-hidden">
           <div className="hero-card-texture" aria-hidden="true" />
@@ -38,13 +42,15 @@ export default function HeroCard() {
           </div>
 
           <div className="hero-content">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-3">
               <Sparkles size={13} className="text-primary-gold flex-shrink-0" />
-              <span className="hero-eyebrow">{sloka.source}</span>
+              <span className="hero-eyebrow">
+                {sloka.source || `శ్రీ విష్ణు సహస్రనామం — శ్లోకం ${slokaIndex}`}
+              </span>
             </div>
 
             <h1
-              className="hero-mantra font-telugu gold-glow-strong"
+              className="hero-mantra font-telugu"
               style={{ fontFamily: "Tiro Telugu, serif" }}
               onClick={() => setOpen(true)}
               role="button"
@@ -74,9 +80,9 @@ export default function HeroCard() {
               </button>
             </div>
 
-            <Link to="/search" className="btn-gold hero-cta">
+            <Link to={todayPath} className="btn-gold hero-cta">
               <span className="font-telugu" style={{ fontFamily: "Tiro Telugu, serif" }}>
-                ప్రయాణాన్ని ప్రారంభించండి
+                సహస్రనామం చదవండి
               </span>
               <Sparkles size={14} />
             </Link>
@@ -104,7 +110,7 @@ export default function HeroCard() {
                   <Sparkles size={14} className="text-primary-gold" />
                   <div>
                     <p className="font-bold text-sm gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
-                      నేటి దివ్య శ్లోకం
+                      నేటి విష్ణు సహస్రనామ శ్లోకం — {slokaIndex}
                     </p>
                     <p className="text-xs text-muted">{sloka.source}</p>
                   </div>
@@ -137,8 +143,8 @@ export default function HeroCard() {
                       <button onClick={handleShare} className="btn-ghost flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium active:scale-95 transition-all">
                         <Share2 size={15} /> Share
                       </button>
-                      <Link to="/search" onClick={() => setOpen(false)} className="btn-gold flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold active:scale-95 transition-all">
-                        <BookOpen size={15} /> Read More
+                      <Link to={allPath} onClick={() => setOpen(false)} className="btn-gold flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold active:scale-95 transition-all">
+                        <BookOpen size={15} /> Full Sahasranama
                       </Link>
                     </div>
                   </div>

@@ -1,19 +1,80 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Bookmark, CheckCircle, User, Star } from "lucide-react";
-import { getReadingProgress, getBookmarks } from "../store/useAppStore";
-import { getCategoryInfo } from "../data/scriptures";
+import { BookOpen, Bookmark, CheckCircle, User, Star, Pencil, Check, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { getCategoryInfo } from "../utils/categoryLookup";
+import { usePublicCategories } from "../hooks/usePublicCategories";
+import { isImageProgressItem } from "../utils/scriptureSubcategoryMatch";
+import { isValidScriptureId } from "../utils/scriptureId";
+import { useMe } from "../hooks/useAuth";
+import { useReadingProgress, useBookmarks, useProfileUpdate, useDeleteAccount } from "../hooks/useUserData";
+import { getAuth, isRegisteredUser } from "../store/authStore";
+import { useNavigate } from "react-router-dom";
+import SupportCard from "../components/SupportCard";
 
 const GOLD = "#E4B24B";
 const GOLD_SOLID = "#C88F2D";
 
 export default function Profile() {
-  const progress = getReadingProgress();
-  const bookmarks = getBookmarks();
-  const completed = progress.filter(p => p.progress >= 95).length;
+  const navigate = useNavigate();
+  const auth = getAuth();
+  const registered = isRegisteredUser();
+  const { data: me, refetch: refetchMe } = useMe({ enabled: registered });
+  const { data: progress = [] } = useReadingProgress();
+  const { data: bookmarks = [] } = useBookmarks();
+  const { data: mainCategories = [] } = usePublicCategories();
+  const profileMutation = useProfileUpdate();
+  const deleteMutation = useDeleteAccount();
+  const [editing, setEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+
+  const readingProgress = progress.filter((p) => (
+    isValidScriptureId(p.scripture_id) && !isImageProgressItem(p)
+  ));
+
+  const displayName = me?.name || auth.name || "భక్తుడు";
+  const subtitle = me?.username || auth.username || "Vaikhanasa Bhakti Path";
+
+  function startEdit() {
+    setNameDraft(displayName);
+    setEditing(true);
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+    setNameDraft("");
+  }
+
+  function saveName() {
+    const name = nameDraft.trim();
+    if (!name) return toast.error("Name cannot be empty.");
+    profileMutation.mutate({ name }, {
+      onSuccess: () => {
+        toast.success("Profile updated");
+        setEditing(false);
+        refetchMe();
+      },
+      onError: () => toast.error("Could not update profile."),
+    });
+  }
+
+  function handleDeleteAccount() {
+    if (!deletePassword) return toast.error("Enter your password to confirm.");
+    deleteMutation.mutate(deletePassword, {
+      onSuccess: () => {
+        toast.success("Account deleted");
+        navigate("/login", { replace: true });
+      },
+      onError: () => toast.error("Could not delete account."),
+    });
+  }
+
+  const completed = readingProgress.filter((p) => p.progress >= 95).length;
 
   const stats = [
-    { icon: BookOpen, label: "Read", value: progress.length, color: GOLD, bg: "#C88F2D22" },
+    { icon: BookOpen, label: "Read", value: readingProgress.length, color: GOLD, bg: "#C88F2D22" },
     { icon: CheckCircle, label: "Completed", value: completed, color: "#4ade80", bg: "#4ade8018" },
     { icon: Bookmark, label: "Saved", value: bookmarks.length, color: GOLD_SOLID, bg: "#C88F2D18" },
   ];
@@ -21,25 +82,51 @@ export default function Profile() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden page-bg">
 
-      <div className="page-header-dark px-4 pt-8 pb-16">
+      <div className="page-header px-4 pt-8 pb-16">
         <div className="flex flex-col items-center text-center gap-3">
           <div className="relative">
             <div className="w-20 h-20 rounded-full flex items-center justify-center corner-card"
               style={{ boxShadow: '0 0 24px rgba(200,143,45,0.25)' }}>
               <User size={32} color={GOLD} strokeWidth={2} />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-              className="w-20 h-20 rounded-full flex items-center justify-center bg-elevated"
-              style={{ border: '1px solid var(--border-medium)' }}>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center bg-elevated"
+              style={{ border: "1px solid var(--border-medium)" }}>
               <Star size={12} fill={GOLD_SOLID} color={GOLD_SOLID} />
             </div>
           </div>
           <div>
-            <h1 className="font-bold text-2xl gold-glow-strong" style={{ fontFamily: "Tiro Telugu, serif" }}>
-              భక్తుడు
-            </h1>
+            {editing ? (
+              <div className="flex items-center gap-2 justify-center">
+                <input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  className="form-input text-center max-w-[220px]"
+                  style={{ fontFamily: "Tiro Telugu, serif" }}
+                  autoFocus
+                />
+                <button type="button" onClick={saveName} disabled={profileMutation.isPending}
+                  className="p-2 rounded-lg hover:bg-white/5" style={{ color: GOLD }}>
+                  {profileMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                </button>
+                <button type="button" onClick={cancelEdit} className="p-2 rounded-lg hover:bg-white/5 text-muted">
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 justify-center">
+                <h1 className="font-bold text-2xl gold-glow-strong" style={{ fontFamily: "Tiro Telugu, serif" }}>
+                  {displayName}
+                </h1>
+                {registered && (
+                  <button type="button" onClick={startEdit} className="p-1.5 rounded-lg hover:bg-white/5 text-muted"
+                    aria-label="Edit name">
+                    <Pencil size={14} />
+                  </button>
+                )}
+              </div>
+            )}
             <p className="text-sm mt-0.5 text-muted" style={{ fontFamily: "Tiro Telugu, serif" }}>
-              Vaikhanasa Bhakti Path
+              {subtitle}
             </p>
           </div>
         </div>
@@ -70,12 +157,12 @@ export default function Profile() {
           </div>
         </div>
 
-        <section className="mt-6 pb-28">
+        <section className={`mt-6 ${registered ? '' : 'pb-28'}`}>
           <h2 className="font-bold text-base mb-3 gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
             Recent Reading
           </h2>
 
-          {progress.length === 0 ? (
+          {readingProgress.length === 0 ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="corner-card rounded-2xl p-10 text-center">
               <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
@@ -92,8 +179,8 @@ export default function Profile() {
             </motion.div>
           ) : (
             <div className="space-y-3">
-              {progress.map((item, i) => {
-                const cat = getCategoryInfo(item.category);
+              {readingProgress.map((item, i) => {
+                const cat = getCategoryInfo(item.category, mainCategories);
                 const done = item.progress >= 95;
                 return (
                   <motion.div key={item.scripture_id}
@@ -101,9 +188,8 @@ export default function Profile() {
                     transition={{ delay: i * 0.05 }}>
                     <Link to={"/read/" + item.scripture_id}
                       className="corner-card rounded-2xl p-4 flex items-center gap-3 block hover:brightness-110 transition-all">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                        className="w-20 h-20 rounded-full flex items-center justify-center bg-elevated"
-              style={{ border: '1px solid var(--border-medium)' }}>
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-elevated"
+                        style={{ border: "1px solid var(--border-medium)" }}>
                         <BookOpen size={16} color={GOLD} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -118,7 +204,7 @@ export default function Profile() {
                           {item.title_telugu}
                         </p>
                         <div className="flex items-center gap-2 mt-1.5">
-                          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#222' }}>
+                          <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-elevated">
                             <motion.div className="h-full rounded-full"
                               style={{ background: done ? "#4ade80" : 'linear-gradient(90deg, #C88F2D, #E4B24B)' }}
                               initial={{ width: 0 }} animate={{ width: item.progress + "%" }}
@@ -138,6 +224,28 @@ export default function Profile() {
             </div>
           )}
         </section>
+
+        {/* Support & Contribution */}
+        <section className="mt-8">
+          <SupportCard />
+        </section>
+
+        {registered && (
+          <section className="mt-8 pb-28">
+            <h2 className="font-bold text-base mb-3 gold-glow" style={{ fontFamily: "Tiro Telugu, serif" }}>
+              Account
+            </h2>
+            <div className="corner-card rounded-2xl p-4">
+              <p className="text-xs text-muted mb-2">Delete your account permanently</p>
+              <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Password to confirm" className="form-input w-full mb-2" />
+              <button type="button" onClick={handleDeleteAccount} disabled={deleteMutation.isPending}
+                className="text-sm text-red-400 hover:text-red-300">
+                Delete account
+              </button>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

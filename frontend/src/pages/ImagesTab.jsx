@@ -200,16 +200,17 @@ function UploadModal({ events, onSave, onClose }) {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="modal-actions modal-actions--inline">
             <button type="button" onClick={onClose}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200">
-              Cancel
+              className="modal-btn text-gray-500 bg-gray-100 hover:bg-gray-200">
+              <span className="modal-btn-label">Cancel</span>
             </button>
             <button type="button" onClick={handleSave}
               disabled={!previews.length || !selectedEvent}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold disabled:opacity-40"
+              className="modal-btn modal-btn-primary disabled:opacity-40"
               style={{ background: GOLD, color: GOLD_DARK }}>
-              <Save size={15} /> Upload {previews.length > 0 ? `(${previews.length})` : ''}
+              <Save size={14} className="modal-btn-icon" />
+              <span className="modal-btn-label">Upload {previews.length > 0 ? `(${previews.length})` : ''}</span>
             </button>
           </div>
         </div>
@@ -247,15 +248,16 @@ function EditModal({ photo, events, onSave, onClose }) {
               placeholder="Photo caption..."
               className="w-full rounded-xl px-3 py-2.5 text-sm outline-none border border-gray-200 focus:border-amber-400" />
           </div>
-          <div className="flex gap-3">
+          <div className="modal-actions modal-actions--inline">
             <button onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200">
-              Cancel
+              className="modal-btn text-gray-500 bg-gray-100 hover:bg-gray-200">
+              <span className="modal-btn-label">Cancel</span>
             </button>
             <button onClick={() => onSave({ ...photo, caption, eventId })}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold"
+              className="modal-btn modal-btn-primary"
               style={{ background: GOLD, color: GOLD_DARK }}>
-              <Save size={14} /> Save
+              <Save size={14} className="modal-btn-icon" />
+              <span className="modal-btn-label">Save</span>
             </button>
           </div>
         </div>
@@ -421,11 +423,15 @@ export default function ImagesTab() {
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
             className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl text-center">
             <p className="text-sm font-semibold text-gray-700 mb-5">Delete this photo?</p>
-            <div className="flex gap-3">
+            <div className="modal-actions modal-actions--inline">
               <button onClick={() => setConfirmDelete(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200">Cancel</button>
+                className="modal-btn text-gray-500 bg-gray-100 hover:bg-gray-200">
+                <span className="modal-btn-label">Cancel</span>
+              </button>
               <button onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600">Delete</button>
+                className="modal-btn text-white bg-red-500 hover:bg-red-600">
+                <span className="modal-btn-label">Delete</span>
+              </button>
             </div>
           </motion.div>
         </div>

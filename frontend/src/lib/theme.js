@@ -1,3 +1,5 @@
+import { syncNativeStatusBar, isNativeApp } from './native';
+
 const MODE_VARS = {
   dark: {
     '--bg-page': '#0a0a0a',
@@ -17,6 +19,9 @@ const MODE_VARS = {
     '--hero-glow': 'radial-gradient(circle at 70% 50%, rgba(200,143,45,0.14) 0%, transparent 60%)',
     '--drawer-bg': '#111111',
     '--hover-bg': 'rgba(255, 255, 255, 0.05)',
+    '--vdash-tab-active': '#C88F2D',
+    '--vdash-tab-active-text': '#0a0a0a',
+    '--verify-accent': '#E4B24B',
   },
   light: {
     '--bg-page': '#FAFAF8',
@@ -36,6 +41,9 @@ const MODE_VARS = {
     '--hero-glow': 'radial-gradient(circle at 70% 50%, rgba(200,143,45,0.1) 0%, transparent 60%)',
     '--drawer-bg': '#FFFFFF',
     '--hover-bg': 'rgba(200, 143, 45, 0.08)',
+    '--vdash-tab-active': '#C88F2D',
+    '--vdash-tab-active-text': '#1a1200',
+    '--verify-accent': '#C88F2D',
   },
 };
 
@@ -100,7 +108,9 @@ const DEFAULT_SETTINGS = {
   fontSize: 'large',
   textColor: 'bright',
   notifyDailySloka: true,
-  notifyPanchangam: false,
+  notifyPanchangam: true,
+  notifyNewContent: true,
+  notifyFestivals: true,
 };
 
 export function getReaderBaseFontSize(fontSize = 'medium') {
@@ -124,6 +134,10 @@ export function applyTheme(settings = {}) {
   Object.entries({ ...modeVars, ...textVars }).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
+
+  if (isNativeApp()) {
+    syncNativeStatusBar(themeMode);
+  }
 
   window.dispatchEvent(new CustomEvent('themechange', { detail: { fontSize, textColor, themeMode } }));
 }
