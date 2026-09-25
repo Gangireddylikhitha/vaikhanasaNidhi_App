@@ -20,7 +20,7 @@ const {
   samvatsaraTe,
 } = require('../data/panchangamTelugu');
 const { toIstDateKey, parseIstDate } = require('./panchangamDate');
-const { buildNithraDisplay } = require('./nithraPanchangam');
+const { buildNithraDisplay, getNithraEntry } = require('./nithraPanchangam');
 const { buildPanchangPhases } = require('./panchangPhases');
 const { buildNithraMuhurtas } = require('./nithraMuhurta');
 
@@ -41,15 +41,48 @@ function getSunSiderealLon(anchorDate, ayanamsa) {
   return (sunTrop - ayanamsa + 360) % 360;
 }
 
-/** Vedic ritu from sidereal sun — matches Nithra / Telugu panchang (not tropical Drik ritu). */
-function getVedicRitu(sunSiderealLon) {
-  const lon = ((Number(sunSiderealLon) % 360) + 360) % 360;
-  if (lon >= 330 || lon < 30) return 'Vasanta';
-  if (lon >= 30 && lon < 90) return 'Grishma';
-  if (lon >= 90 && lon < 150) return 'Varsha';
-  if (lon >= 150 && lon < 210) return 'Sharad';
-  if (lon >= 210 && lon < 270) return 'Hemanta';
-  return 'Shishira';
+const RITU_ORDER = ['Vasanta', 'Grishma', 'Varsha', 'Sharad', 'Hemanta', 'Shishira'];
+
+/**
+ * Vedic / Chandramana ritu from lunar masa (Telugu / Nithra panchang).
+ * Changes every 2 lunar months (masams):
+ * - 0: చైత్రం,     1: వైశాఖం     → వసంత ఋతువు (Vasanta)
+ * - 2: జ్యేష్ఠం,    3: ఆషాఢం      → గ్రీష్మ ఋతువు (Grishma)
+ * - 4: శ్రావణం,    5: భాద్రపదం   → వర్ష ఋతువు (Varsha)
+ * - 6: ఆశ్వయుజం,  7: కార్తీకం    → శరదృతువు (Sharad)
+ * - 8: మార్గశిరం,  9: పుష్యం     → హేమంత ఋతువు (Hemanta)
+ * - 10: మాఘం,    11: ఫాల్గుణం    → శిశిర ఋతువు (Shishira)
+ */
+function getVedicRitu(masaOrLon, sunSiderealLon) {
+  let masaIndex = null;
+
+  if (masaOrLon != null) {
+    if (typeof masaOrLon === 'object' && typeof masaOrLon.index === 'number') {
+      masaIndex = masaOrLon.index;
+    } else if (typeof masaOrLon === 'number' && Number.isInteger(masaOrLon) && masaOrLon >= 0 && masaOrLon < 12) {
+      masaIndex = masaOrLon;
+    }
+  }
+
+  if (masaIndex !== null) {
+    const norm = ((Math.floor(masaIndex) % 12) + 12) % 12;
+    const rituIndex = Math.floor(norm / 2);
+    return RITU_ORDER[rituIndex] || 'Vasanta';
+  }
+
+  // Fallback to sidereal sun longitude if masa is unavailable
+  const lonVal = typeof masaOrLon === 'number' && masaOrLon >= 12 ? masaOrLon : sunSiderealLon;
+  if (lonVal != null) {
+    const lon = ((Number(lonVal) % 360) + 360) % 360;
+    if (lon >= 330 || lon < 30) return 'Vasanta';
+    if (lon >= 30 && lon < 90) return 'Grishma';
+    if (lon >= 90 && lon < 150) return 'Varsha';
+    if (lon >= 150 && lon < 210) return 'Sharad';
+    if (lon >= 210 && lon < 270) return 'Hemanta';
+    return 'Shishira';
+  }
+
+  return 'Vasanta';
 }
 
 /** Vedic ayana — sidereal (Makara→Mithuna = Uttarayana), matches Nithra before Karka Sankranti. */
@@ -94,24 +127,8 @@ function formatIstRange(start, end, timezone = DEFAULT_TZ) {
   return `${s} - ${e}`;
 }
 
-function mapFestivals(festivals = []) {
-  return festivals.map((f) => ({
-    name: f.name,
-    nameTe: f.name,
-    category: f.category || f.type || 'single',
-    categoryTe: FESTIVAL_CATEGORY_TE[f.category] || FESTIVAL_CATEGORY_TE[f.type] || 'పండుగ',
-    type: f.type,
-    paksha: f.paksha,
-    masa: f.masa,
-    tithi: f.tithi,
-    isFastingDay: Boolean(f.isFastingDay),
-    observances: f.observances || [],
-    description: f.description || '',
-    regional: f.regional || [],
-    spanDays: f.spanDays,
-    dailyNames: f.dailyNames || [],
-  }));
-}
+const { resolveTeluguFestivals } = require('../data/panchangamFestivalsTelugu');
+
 
 function buildDailyInfo(raw, timezone) {
   const choghadiya = [...(raw.choghadiya?.day || []), ...(raw.choghadiya?.night || [])];
@@ -151,7 +168,7 @@ function computeDrikPanchangam(dateInput, locationInput = {}) {
   const { timezone } = location;
   const anchorDate = raw.sunrise || date;
   const sunSiderealLon = getSunSiderealLon(anchorDate, raw.ayanamsa);
-  const vedicRituKey = getVedicRitu(sunSiderealLon);
+  const vedicRituKey = getVedicRitu(raw.masa, sunSiderealLon);
   const vedicAyanaKey = getVedicAyana(sunSiderealLon);
 
   const nithraMuhurta = buildNithraMuhurtas(raw, {
@@ -215,7 +232,7 @@ function computeDrikPanchangam(dateInput, locationInput = {}) {
     formatIstRange(p.start, p.end, timezone)
   );
 
-  const festivals = mapFestivals(raw.festivals || []);
+  const festivals = resolveTeluguFestivals(raw.festivals || [], raw, dateKey);
   const dailyInfo = buildDailyInfo(raw, timezone);
 
   const nithra = buildNithraDisplay(raw, {
@@ -272,49 +289,67 @@ function computeDrikPanchangam(dateInput, locationInput = {}) {
   const moonRasi = rashiTe(raw.moonRashi?.index);
   const sunRasi = rashiTe(raw.sunRashi?.index);
 
+  const nithraEntry = getNithraEntry(dateKey);
+
+  const finalTithi = nithraEntry?.tithi ? nithraEntry.tithi.split(/\s+(?:ఉ\.|మ\.|సా\.|ప\.|రా\.|తె\.)/)[0] : tithi;
+  const finalNakshatra = nithraEntry?.nakshatra ? nithraEntry.nakshatra.split(/\s+(?:ఉ\.|మ\.|సా\.|ప\.|రా\.|తె\.)/)[0] : nakshatra;
+  const finalYoga = nithraEntry?.yoga ? nithraEntry.yoga.split(/\s+(?:ఉ\.|మ\.|సా\.|ప\.|రా\.|తె\.)/)[0] : yoga;
+  const finalKarana = nithraEntry?.karana ? nithraEntry.karana.split(/\s+(?:ఉ\.|మ\.|సా\.|ప\.|రా\.|తె\.)/)[0] : karana;
+
+  const finalSunrise = nithraEntry?.sunrise || formatIstTime(raw.sunrise, timezone);
+  const finalSunset = nithraEntry?.sunset || formatIstTime(raw.sunset, timezone);
+  const finalMoonrise = nithraEntry?.moonrise || formatIstTime(raw.moonrise, timezone);
+  const finalMoonset = nithraEntry?.moonset || formatIstTime(raw.moonset, timezone);
+  const finalRahukalam = nithraEntry?.rahukalam || rahukalam;
+  const finalYamagandam = nithraEntry?.yamagandam || yamagandam;
+  const finalMaasam = nithraEntry?.teluguMonth || maasam;
+  const finalRuthuvu = nithraEntry?.ruthulu || ruthuvu;
+  const finalAyana = nithraEntry?.ayanam || ayanam;
+  const finalSamvatsaram = nithraEntry?.teluguYearname || samvatsaram;
+
   const data = {
     date: dateKey,
     dateLabel: formatDateLabel(date),
-    teluguDate: `${maasam} ${paksham}`,
+    teluguDate: `${finalMaasam} ${paksham}`,
     gregorian: formatDateLabel(date),
-    samvatsaram,
-    maasam,
+    samvatsaram: finalSamvatsaram,
+    maasam: finalMaasam,
     paksham,
-    ayanam,
-    ruthuvu,
+    ayanam: finalAyana,
+    ruthuvu: finalRuthuvu,
     ritu: vedicRituKey,
     vaaram,
     day: vaaram,
 
-    sunrise: formatIstTime(raw.sunrise, timezone),
-    sunset: formatIstTime(raw.sunset, timezone),
-    moonrise: formatIstTime(raw.moonrise, timezone),
-    moonset: formatIstTime(raw.moonset, timezone),
+    sunrise: finalSunrise,
+    sunset: finalSunset,
+    moonrise: finalMoonrise,
+    moonset: finalMoonset,
 
-    tithi,
-    tithiEndTime,
-    nakshatra,
-    nakshatraEndTime,
-    yoga,
-    yogaEndTime,
-    karana,
-    karanaEndTime,
+    tithi: finalTithi,
+    tithiEndTime: nithra.tithiLine || tithiEndTime,
+    nakshatra: finalNakshatra,
+    nakshatraEndTime: nithra.nakshatraLine || nakshatraEndTime,
+    yoga: finalYoga,
+    yogaEndTime: nithra.yogaLine || yogaEndTime,
+    karana: finalKarana,
+    karanaEndTime: nithra.karanaLine || karanaEndTime,
     moonRasi,
     sunRasi,
 
     muhurtham: {
-      rahuKalam: rahukalam,
-      yamagandam,
+      rahuKalam: finalRahukalam,
+      yamagandam: finalYamagandam,
       gulikaKalam,
-      durmuhurtham,
+      durmuhurtham: nithra.durmuhurtham,
       abhijitMuhurtham,
-      varjyam,
-      amritaKalam,
+      varjyam: nithra.varjyam,
+      amritaKalam: nithra.amritaGadiyalu,
     },
 
     // Flat fields for backward compatibility
-    rahukalam,
-    yamagandam,
+    rahukalam: finalRahukalam,
+    yamagandam: finalYamagandam,
     gulikaKalam,
     auspicious: abhijitMuhurtham !== '—' ? `అభిజిత్ ముహూర్తం: ${abhijitMuhurtham}` : '—',
 
@@ -332,7 +367,7 @@ function computeDrikPanchangam(dateInput, locationInput = {}) {
       timezone: location.timezone,
     },
     source: 'computed',
-    engine: `drik-lahiri-${calendarType}-nithra-v1`,
+    engine: `drik-lahiri-${calendarType}-nithra-v8`,
     calendarType,
   };
 

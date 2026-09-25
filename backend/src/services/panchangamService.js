@@ -41,7 +41,7 @@ async function getPanchangam(date = new Date(), locationInput = {}) {
   const needsUpgrade = !stored?.phases
     || !stored?.nithra
     || !String(stored?.engine || '').includes('amanta')
-    || !String(stored?.engine || '').includes('nithra-v1');
+    || !String(stored?.engine || '').includes('nithra-v8');
   if (stored && !needsUpgrade) return stored;
 
   const computed = computeAndCache(date, location);

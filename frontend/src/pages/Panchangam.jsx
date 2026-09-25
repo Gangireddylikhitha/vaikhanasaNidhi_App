@@ -19,15 +19,35 @@ import {
   NithraTodayChip,
 } from '../components/panchangam/NithraLayout';
 
+function formatMuhurtaText(val) {
+  if (!val) return '';
+  if (Array.isArray(val)) {
+    const valid = val.filter((v) => v && v !== '—');
+    return valid.join(' • ');
+  }
+  return val !== '—' ? String(val) : '';
+}
+
 function buildShareText(p, n) {
   if (!p || !n) return '';
+  const durText = formatMuhurtaText(n.durmuhurtham);
+  const varjyamText = formatMuhurtaText(n.varjyam);
+  const amritText = formatMuhurtaText(n.amritaGadiyalu);
+
   return [
     `📅 ${n.dateDdMmYyyy} — ${n.headerMonthVaaram}`,
     n.samvatsaraTitle,
+    n.festivalBanner ? `విశేషం: ${n.festivalBanner}` : '',
     `తిథి: ${n.tithiLine}`,
     `నక్షత్రం: ${n.nakshatraLine}`,
+    n.yogaLine ? `యోగం: ${n.yogaLine}` : '',
+    n.karanaLine ? `కరణం: ${n.karanaLine}` : '',
     `సూర్యోదయం: ${n.sunrise} | సూర్యాస్తమయం: ${n.sunset}`,
     `రాహుకాలం: ${n.rahukalam}`,
+    `యమగండం: ${n.yamagandam}`,
+    durText ? `దుర్ముహూర్తం: ${durText}` : '',
+    varjyamText ? `వర్జ్యము: ${varjyamText}` : '',
+    amritText ? `అమృత ఘడియలు: ${amritText}` : '',
     p.phases?.phase4?.ekadashi ? `ఏకాదశి: ${p.phases.phase4.ekadashi}` : '',
   ].filter(Boolean).join('\n');
 }
@@ -66,6 +86,9 @@ export default function Panchangam() {
   }
   async function share() {
     if (!p || !n) return;
+    const durText = formatMuhurtaText(n.durmuhurtham);
+    const varjyamText = formatMuhurtaText(n.varjyam);
+
     const lines = [
       `${n.dateDdMmYyyy} — ${n.headerMonthVaaram}`,
       n.samvatsaraTitle,
@@ -73,6 +96,9 @@ export default function Panchangam() {
       `నక్షత్రం: ${n.nakshatraLine}`,
       `సూర్యోదయం: ${n.sunrise}   సూర్యాస్తమయం: ${n.sunset}`,
       `రాహుకాలం: ${n.rahukalam}`,
+      `యమగండం: ${n.yamagandam}`,
+      durText ? `దుర్ముహూర్తం: ${durText}` : '',
+      varjyamText ? `వర్జ్యము: ${varjyamText}` : '',
       p.phases?.phase4?.ekadashi ? `ఏకాదశి: ${p.phases.phase4.ekadashi}` : '',
     ].filter(Boolean);
 
@@ -172,18 +198,28 @@ export default function Panchangam() {
             rightValue={p3.yamagandam || n.yamagandam}
           />
 
-          {(p3.durmuhurtham?.length > 0 || n.durmuhurtham?.length > 0) && (
-            <NithraSection title="దుర్ముహూర్తం">
-              {(p3.durmuhurtham || n.durmuhurtham).join(' • ')}
-            </NithraSection>
-          )}
+          {(() => {
+            const durDisplay = formatMuhurtaText(p3.durmuhurtham || n.durmuhurtham);
+            if (!durDisplay) return null;
+            return (
+              <NithraSection title="దుర్ముహూర్తం">
+                {durDisplay}
+              </NithraSection>
+            );
+          })()}
 
-          <NithraDualSection
-            leftTitle="వర్జ్యము"
-            leftValue={(p3.varjyam || n.varjyam)?.[0] || '—'}
-            rightTitle="అమృత ఘడియలు"
-            rightValue={(p3.amritaKalam || n.amritaGadiyalu)?.[0] || '—'}
-          />
+          {(() => {
+            const varDisplay = formatMuhurtaText(p3.varjyam || n.varjyam) || '—';
+            const amritDisplay = formatMuhurtaText(p3.amritaKalam || n.amritaGadiyalu) || '—';
+            return (
+              <NithraDualSection
+                leftTitle="వర్జ్యము"
+                leftValue={varDisplay}
+                rightTitle="అమృత ఘడియలు"
+                rightValue={amritDisplay}
+              />
+            );
+          })()}
 
           <NithraDualSection
             leftTitle="గుళిక కాలం"
@@ -194,7 +230,7 @@ export default function Panchangam() {
 
           {ph?.phase4?.festivals?.length > 0 && (
             <NithraSection title="పండుగలు / వ్రతాలు">
-              {ph.phase4.festivals.map((f) => f.name).join(' • ')}
+              {ph.phase4.festivals.map((f) => f.nameTe || f.name).join(' • ')}
             </NithraSection>
           )}
 
