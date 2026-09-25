@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Toaster } from 'sonner';
-
+import { isNativeApp } from './lib/native';
 import Layout from './components/Layout';
+import AppToaster from './components/AppToaster';
 import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
 import Home from './pages/Home';
@@ -14,19 +14,44 @@ import Bookmarks from './pages/Bookmarks';
 import Panchangam from './pages/Panchangam';
 import Profile from './pages/Profile';
 import CategoriesPage from './pages/CategoriesPage';
-import PopularPage from './pages/PopularPage';
-import ContinueReadingPage from './pages/ContinueReadingPage';
+import SubcategoryPage from './pages/SubcategoryPage';
+import Gallery from './pages/Gallery';
+import JapamPage from './pages/JapamPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import VerificationPage from './pages/VerificationPage';
 import LoginPage from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
-import Gallery from './pages/Gallery';
+import SahasranamamTodayPage from './pages/SahasranamamTodayPage';
+import SahasranamamAllPage from './pages/SahasranamamAllPage';
+import SupportPage from './pages/SupportPage';
 import { hasSeenOnboarding, getSettings } from './store/useAppStore';
-import { getAuth, isAdmin, logout } from './store/authStore';
+import { isLoggedIn, isAdmin, isRegisteredUser, isVerifiedUser } from './store/authStore';
 import { applyTheme } from './lib/theme';
+import ThemeProvider from './components/ThemeProvider';
+import { useLogout } from './hooks/useAuth';
+import { LoginPromptProvider } from './context/LoginPromptContext';
+import GuestGuard from './components/GuestGuard';
+import VerificationGuard from './components/VerificationGuard';
+import NativeBackBridge from './components/NativeBackBridge';
+import PushNavBridge from './components/PushNavBridge';
+import FestivalPopup from './components/FestivalPopup';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 function PageWrapper({ children }) {
   const location = useLocation();
+  if (isNativeApp()) {
+    return <div className="w-full min-h-full">{children}</div>;
+  }
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -35,6 +60,7 @@ function PageWrapper({ children }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.2 }}
+        className="w-full min-h-full"
       >
         {children}
       </motion.div>
@@ -42,17 +68,27 @@ function PageWrapper({ children }) {
   );
 }
 
-export default function App() {
-  const [phase, setPhase] = useState('splash'); // 'splash' | 'onboarding' | 'login' | 'app' | 'admin'
+function AppContent() {
+  const [phase, setPhase] = useState('splash');
+  const logoutMutation = useLogout();
 
   useEffect(() => {
     applyTheme(getSettings());
   }, []);
 
+  useEffect(() => {
+    // Fired by the axios interceptor when the refresh token is expired/invalid
+    // and the session can no longer be renewed silently.
+    function onForcedLogout() {
+      setPhase('login');
+    }
+    window.addEventListener('auth:logout', onForcedLogout);
+    return () => window.removeEventListener('auth:logout', onForcedLogout);
+  }, []);
+
   function afterSplash() {
-    const auth = getAuth();
-    if (auth.loggedIn) {
-      setPhase(auth.role === 'admin' ? 'admin' : 'app');
+    if (isLoggedIn()) {
+      setPhase('app');
     } else if (hasSeenOnboarding()) {
       setPhase('login');
     } else {
@@ -60,58 +96,128 @@ export default function App() {
     }
   }
 
-  function handleLogin(role) {
-    setPhase(role === 'admin' ? 'admin' : 'app');
+  function handleLogin() {
+    // Admins share the same session as regular users: they land in the app
+    // and can open the admin panel from the menu. Only registered (non-admin)
+    // users are steered to the verification flow.
+    if (!isAdmin() && isRegisteredUser() && !isVerifiedUser()) {
+      sessionStorage.setItem('post-login-verification', '1');
+    }
+    setPhase('app');
   }
 
   function handleLogout() {
-    logout();
-    setPhase('login');
+    logoutMutation.mutate(undefined, {
+      onSettled: () => setPhase('login'),
+    });
   }
 
   if (phase === 'splash') return <Splash onDone={afterSplash} />;
   if (phase === 'onboarding') return <Onboarding onDone={() => setPhase('login')} />;
-  if (phase === 'login') return <LoginPage onLogin={handleLogin} />;
-  if (phase === 'admin') return <AdminPanel onLogout={handleLogout} />;
+  if (phase !== 'app') {
+    return (
+      <>
+        <Routes>
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="*" element={<LoginPage onLogin={handleLogin} />} />
+        </Routes>
+        <AppToaster />
+      </>
+    );
+  }
+  return (
+    <LoginPromptProvider>
+      <AppRoutes onLogout={handleLogout} />
+      <AppToaster />
+    </LoginPromptProvider>
+  );
+}
 
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes onLogout={handleLogout} />
-        <Toaster
-          position="bottom-center"
-          toastOptions={{
-            style: {
-              fontFamily: 'Tiro Telugu, serif',
-              background: 'var(--bg-card)',
-              color: 'var(--text-body)',
-              border: '1px solid #C88F2D33',
-              fontSize: '14px',
-              lineHeight: '1.5',
-            },
-          }}
-        />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
 }
 
-function AppRoutes({ onLogout }) {
+function PostLoginVerificationRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (sessionStorage.getItem('post-login-verification') === '1') {
+      sessionStorage.removeItem('post-login-verification');
+      if (isRegisteredUser() && !isVerifiedUser()) {
+        navigate('/verification', { replace: true });
+      }
+    }
+  }, [navigate]);
+
+  return null;
+}
+
+function Guarded({ children }) {
+  return (
+    <GuestGuard>
+      <VerificationGuard>{children}</VerificationGuard>
+    </GuestGuard>
+  );
+}
+
+function AdminGuard({ children }) {
+  if (!isAdmin()) return <Navigate to="/" replace />;
+  return children;
+}
+
+function UserLayoutRoute({ onLogout }) {
   return (
     <Layout onLogout={onLogout}>
+      <NativeBackBridge />
+      <PushNavBridge />
+      <FestivalPopup />
+      <PostLoginVerificationRedirect />
       <PageWrapper>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/read/:id" element={<Reader />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/bookmarks" element={<Bookmarks />} />
-          <Route path="/panchangam" element={<Panchangam />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/popular" element={<PopularPage />} />
-          <Route path="/continue-reading" element={<ContinueReadingPage />} />
-        </Routes>
+        <Outlet />
       </PageWrapper>
     </Layout>
+  );
+}
+
+function AppRoutes({ onLogout }) {
+  return (
+    <Routes>
+      <Route
+        path="/admin"
+        element={(
+          <AdminGuard>
+            <AdminPanel onLogout={onLogout} />
+          </AdminGuard>
+        )}
+      />
+      <Route element={<UserLayoutRoute onLogout={onLogout} />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/sahasranamam" element={<SahasranamamAllPage />} />
+        <Route path="/sahasranamam/today" element={<SahasranamamTodayPage />} />
+        <Route path="/verification" element={<VerificationPage />} />
+        <Route path="/read/:id" element={<Guarded><Reader /></Guarded>} />
+        <Route path="/search" element={<Guarded><SearchPage /></Guarded>} />
+        <Route path="/bookmarks" element={<Guarded><Bookmarks /></Guarded>} />
+        <Route path="/panchangam" element={<Guarded><Panchangam /></Guarded>} />
+        <Route path="/profile" element={<Guarded><Profile /></Guarded>} />
+        <Route path="/categories" element={<Guarded><CategoriesPage /></Guarded>} />
+        <Route path="/categories/:categoryKey" element={<Guarded><SubcategoryPage /></Guarded>} />
+        <Route path="/gallery" element={<Guarded><Gallery /></Guarded>} />
+        <Route path="/japam" element={<Guarded><JapamPage /></Guarded>} />
+        <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
+        <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/donate" element={<SupportPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      </Route>
+    </Routes>
   );
 }

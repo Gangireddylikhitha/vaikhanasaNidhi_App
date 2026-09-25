@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">వైఖానస నిధి</string>
+    <string name="title_activity_main">వైఖానస నిధి</string>
+    <string name="package_name">com.vaikhanasanidhi.app</string>
+    <string name="custom_url_scheme">com.vaikhanasanidhi.app</string>
+</resources>

@@ -1,0 +1,75 @@
+name: Deploy Backend to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - deployment
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy Backend (AWS EB)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./backend
+        run: npm ci --omit=dev
+
+      # Optional: inject Firebase service account if provided in GitHub Secrets
+      - name: Inject Firebase Service Account
+        working-directory: ./backend
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > firebase-service-account.json
+            echo "firebase-service-account.json written from GitHub Secrets."
+          else
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON secret not provided; keeping existing file if packaged."
+          fi
+
+      - name: Generate Deployment Package
+        working-directory: ./backend
+        run: |
+          zip -r ../deploy-backend-${{ github.sha }}.zip . \
+            -x "*.git*" \
+            -x "*.env*" \
+            -x "tests/*" \
+            -x "node_modules/*"
+
+      - name: Deploy to AWS Elastic Beanstalk
+        if: ${{ env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: einaregilsson/beanstalk-deploy@v22
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: vaikhanasa-nidhi-backend
+          environment_name: vaikhanasa-api-dev
+          version_label: "backend-${{ github.sha }}-${{ github.run_number }}"
+          region: ap-south-1
+          deployment_package: deploy-backend-${{ github.sha }}.zip
+          wait_for_environment_recovery: 200
+
+      - name: Upload Deployment Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-deployment-zip
+          path: deploy-backend-${{ github.sha }}.zip
+          retention-days: 7
