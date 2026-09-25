@@ -21,17 +21,27 @@ export default function BookVisualReaderLayout({
   const [jumpValue, setJumpValue] = useState(String(pageIdx + 1));
   const [showJump, setShowJump] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [isPinching, setIsPinching] = useState(false);
+  const isPinchingRef = useRef(false);
+  const pinchRef = useRef({ active: false, startDist: 0, startZoom: 1, focalX: 0, focalY: 0, contentX: 0, contentY: 0 });
+  const touchDownRef = useRef({ x: 0, y: 0, time: 0, moved: false });
+  const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
+  const mouseDownRef = useRef({ x: 0, y: 0, time: 0, moved: false, isDown: false });
 
   const displayTotal = scripture?.page_count || totalPages;
   const currentPage = pageIdx + 1;
 
-  useEffect(() => {
+  const [prevPageIdx, setPrevPageIdx] = useState(pageIdx);
+  if (prevPageIdx !== pageIdx) {
+    setPrevPageIdx(pageIdx);
     setJumpValue(String(pageIdx + 1));
-  }, [pageIdx]);
+  }
 
-  useEffect(() => {
+  const [prevScriptureId, setPrevScriptureId] = useState(scripture?.id);
+  if (prevScriptureId !== scripture?.id) {
+    setPrevScriptureId(scripture?.id);
     setZoom(1);
-  }, [scripture?.id]);
+  }
 
   const scrollToPage = useCallback((idx, behavior = 'smooth') => {
     const el = pageRefs.current[idx];
@@ -68,6 +78,29 @@ export default function BookVisualReaderLayout({
     });
   }, [pageIdx]);
 
+  const applyZoomCentered = useCallback((nextZoom, clientX, clientY) => {
+    const vp = viewportRef.current;
+    if (!vp) {
+      setZoom(nextZoom);
+      return;
+    }
+    const rect = vp.getBoundingClientRect();
+    const focalX = (clientX != null ? clientX : rect.left + rect.width / 2) - rect.left;
+    const focalY = (clientY != null ? clientY : rect.top + rect.height / 2) - rect.top;
+    const currentZoom = zoom;
+    const ratio = nextZoom / currentZoom;
+    const contentX = vp.scrollLeft + focalX;
+    const contentY = vp.scrollTop + focalY;
+
+    setZoom(nextZoom);
+    requestAnimationFrame(() => {
+      const vp2 = viewportRef.current;
+      if (!vp2) return;
+      vp2.scrollLeft = Math.max(0, contentX * ratio - focalX);
+      vp2.scrollTop = Math.max(0, contentY * ratio - focalY);
+    });
+  }, [zoom]);
+
   const zoomIn = useCallback(() => {
     applyZoom(Math.min(ZOOM_MAX, +(zoom + ZOOM_STEP).toFixed(2)));
   }, [zoom, applyZoom]);
@@ -77,8 +110,16 @@ export default function BookVisualReaderLayout({
   }, [zoom, applyZoom]);
 
   const zoomReset = useCallback(() => {
-    applyZoom(1);
-  }, [applyZoom]);
+    setZoom(1);
+    requestAnimationFrame(() => {
+      const vp = viewportRef.current;
+      const pageEl = pageRefs.current[pageIdx];
+      if (vp && pageEl) {
+        vp.scrollLeft = 0;
+        vp.scrollTo({ top: Math.max(0, pageEl.offsetTop - 4), behavior: 'smooth' });
+      }
+    });
+  }, [pageIdx]);
 
   function handleJumpSubmit(e) {
     e?.preventDefault();
@@ -86,6 +127,180 @@ export default function BookVisualReaderLayout({
     if (!Number.isFinite(num) || num < 1 || num > totalPages) return;
     scrollToPage(num - 1);
     setShowJump(false);
+  }
+
+  // Multi-touch pinch-to-zoom on mobile and touch devices
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return undefined;
+
+    function onTouchStart(e) {
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+        const rect = vp.getBoundingClientRect();
+        const focalX = midX - rect.left;
+        const focalY = midY - rect.top;
+
+        pinchRef.current = {
+          active: true,
+          startDist: dist,
+          startZoom: zoom,
+          focalX,
+          focalY,
+          contentX: vp.scrollLeft + focalX,
+          contentY: vp.scrollTop + focalY,
+        };
+        isPinchingRef.current = true;
+        setIsPinching(true);
+      } else if (e.touches.length === 1) {
+        touchDownRef.current = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+          time: Date.now(),
+          moved: false,
+        };
+      }
+    }
+
+    function onTouchMove(e) {
+      if (e.touches.length === 2 && pinchRef.current.active) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const newDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const scaleRatio = newDist / (pinchRef.current.startDist || 1);
+        const rawZoom = pinchRef.current.startZoom * scaleRatio;
+        const nextZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +rawZoom.toFixed(2)));
+
+        setZoom(nextZoom);
+
+        const zoomRatio = nextZoom / (pinchRef.current.startZoom || 1);
+        const targetScrollLeft = pinchRef.current.contentX * zoomRatio - pinchRef.current.focalX;
+        const targetScrollTop = pinchRef.current.contentY * zoomRatio - pinchRef.current.focalY;
+
+        vp.scrollLeft = Math.max(0, targetScrollLeft);
+        vp.scrollTop = Math.max(0, targetScrollTop);
+      } else if (e.touches.length === 1 && !pinchRef.current.active) {
+        const dx = e.touches[0].clientX - touchDownRef.current.x;
+        const dy = e.touches[0].clientY - touchDownRef.current.y;
+        if (Math.hypot(dx, dy) > 10) {
+          touchDownRef.current.moved = true;
+        }
+      }
+    }
+
+    function onTouchEnd(e) {
+      if (pinchRef.current.active) {
+        if (e.touches.length < 2) {
+          pinchRef.current.active = false;
+          isPinchingRef.current = false;
+          setIsPinching(false);
+          // Snap back if close to 1x
+          setZoom((current) => {
+            if (current >= 0.93 && current <= 1.07) {
+              return 1;
+            }
+            return current;
+          });
+        }
+      } else if (e.touches.length === 0) {
+        const elapsed = Date.now() - touchDownRef.current.time;
+        if (!touchDownRef.current.moved && elapsed < 320) {
+          // It is a clean finger tap!
+          if (zoom > 1.05) {
+            // "when i click on pdf finger it should zoom out"
+            zoomReset();
+          } else {
+            // Check for double-tap to zoom in
+            const now = Date.now();
+            const timeSinceLast = now - lastTapRef.current.time;
+            const distFromLast = Math.hypot(
+              touchDownRef.current.x - lastTapRef.current.x,
+              touchDownRef.current.y - lastTapRef.current.y
+            );
+            if (timeSinceLast < 320 && distFromLast < 35) {
+              applyZoomCentered(2.0, touchDownRef.current.x, touchDownRef.current.y);
+              lastTapRef.current = { time: 0, x: 0, y: 0 };
+            } else {
+              lastTapRef.current = {
+                time: now,
+                x: touchDownRef.current.x,
+                y: touchDownRef.current.y,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    function onWheel(e) {
+      // Trackpad pinch gesture or Ctrl + Mouse Wheel on desktop website
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = -e.deltaY * 0.005;
+        const nextZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(zoom + delta).toFixed(2)));
+        applyZoomCentered(nextZoom, e.clientX, e.clientY);
+      }
+    }
+
+    vp.addEventListener('touchstart', onTouchStart, { passive: true });
+    vp.addEventListener('touchmove', onTouchMove, { passive: false });
+    vp.addEventListener('touchend', onTouchEnd, { passive: true });
+    vp.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    vp.addEventListener('wheel', onWheel, { passive: false });
+
+    return () => {
+      vp.removeEventListener('touchstart', onTouchStart);
+      vp.removeEventListener('touchmove', onTouchMove);
+      vp.removeEventListener('touchend', onTouchEnd);
+      vp.removeEventListener('touchcancel', onTouchEnd);
+      vp.removeEventListener('wheel', onWheel);
+    };
+  }, [zoom, applyZoomCentered, zoomReset]);
+
+  // Mouse click handling on desktop: click when zoomed in zooms out to 100%
+  function handleMouseDown(e) {
+    mouseDownRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now(),
+      moved: false,
+      isDown: true,
+    };
+  }
+
+  function handleMouseMove(e) {
+    if (mouseDownRef.current.isDown) {
+      const dist = Math.hypot(
+        e.clientX - mouseDownRef.current.x,
+        e.clientY - mouseDownRef.current.y
+      );
+      if (dist > 8) {
+        mouseDownRef.current.moved = true;
+      }
+    }
+  }
+
+  function handleMouseUp() {
+    mouseDownRef.current.isDown = false;
+    const elapsed = Date.now() - mouseDownRef.current.time;
+    if (!mouseDownRef.current.moved && elapsed < 350) {
+      if (zoom > 1.05) {
+        zoomReset();
+      }
+    }
+  }
+
+  function handleDoubleClick(e) {
+    if (zoom <= 1.05) {
+      applyZoomCentered(2.0, e.clientX, e.clientY);
+    } else {
+      zoomReset();
+    }
   }
 
   // Track which page is in view while scrolling
@@ -161,7 +376,7 @@ export default function BookVisualReaderLayout({
   const zoomPct = Math.round(zoom * 100);
 
   return (
-    <div className="book-swipe-reader">
+    <div className="book-swipe-reader relative">
       <div className="book-swipe-toolbar">
         <div className="book-swipe-controls-bar">
           <button type="button" onClick={() => setShowJump((s) => !s)}
@@ -233,12 +448,20 @@ export default function BookVisualReaderLayout({
         )}
       </div>
 
-      <div ref={viewportRef} className="book-scroll-viewport">
+      <div
+        ref={viewportRef}
+        className="book-scroll-viewport"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
+      >
         <div
-          className={`book-scroll-strip${zoom > 1.01 ? ' is-zoomed' : ''}`}
+          className={`book-scroll-strip${zoom > 1.01 ? ' is-zoomed' : ''}${isPinching ? ' is-pinching' : ''}`}
           style={{
             width: `${zoom * 100}%`,
             minWidth: zoom < 1 ? `${zoom * 100}%` : '100%',
+            transition: isPinching ? 'none' : undefined,
           }}
         >
           {childList.map((child, i) => (
@@ -246,7 +469,7 @@ export default function BookVisualReaderLayout({
               key={child?.key ?? `page-${i}`}
               data-page-index={i}
               ref={(node) => { pageRefs.current[i] = node; }}
-              className="book-scroll-page"
+              className={`book-scroll-page${zoom > 1.05 ? ' is-zoomed' : ''}`}
             >
               {child}
               <span className="book-scroll-page-badge tabular-nums">{i + 1}</span>
@@ -254,6 +477,17 @@ export default function BookVisualReaderLayout({
           ))}
         </div>
       </div>
+
+      {zoom > 1.05 && (
+        <button
+          type="button"
+          onClick={zoomReset}
+          className="book-swipe-zoom-float-badge"
+          aria-label="Tap to zoom out (100%)"
+        >
+          <span>{zoomPct}% · Tap to zoom out</span>
+        </button>
+      )}
     </div>
   );
 }

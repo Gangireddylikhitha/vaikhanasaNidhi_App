@@ -2680,6 +2680,10 @@ img { max-width: 100%; display: block; }
   /* Allow panning sideways when zoomed in */
 }
 
+.book-scroll-strip.is-pinching {
+  transition: none !important;
+}
+
 .book-scroll-page {
   position: relative;
   width: 100%;
@@ -2688,6 +2692,44 @@ img { max-width: 100%; display: block; }
   border-radius: 0.2rem;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
   overflow: hidden;
+  cursor: zoom-in;
+}
+
+.book-scroll-page.is-zoomed {
+  cursor: zoom-out;
+}
+
+.book-swipe-zoom-float-badge {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(18, 16, 14, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(200, 143, 45, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.book-swipe-zoom-float-badge:hover {
+  background: rgba(18, 16, 14, 0.95);
+  border-color: rgba(200, 143, 45, 0.7);
+  transform: translateX(-50%) scale(1.04);
+}
+
+.book-swipe-zoom-float-badge:active {
+  transform: translateX(-50%) scale(0.96);
 }
 
 .book-scroll-page-img {
