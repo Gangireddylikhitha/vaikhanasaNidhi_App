@@ -31,8 +31,8 @@ function detectSpecialDays(tithiIndex, pakshaKey, festivals = []) {
     isAmavasya: amavasya || festivals.some((f) => f.category === 'amavasya'),
     isPournami: pournami || festivals.some((f) => f.category === 'pournami'),
     isSankranti: sankranti.length > 0,
-    sankrantiNames: sankranti.map((f) => f.name),
-    ekadashiName: ekadashiFestivals[0]?.name || (ekadashi ? 'ఏకాదశి' : null),
+    sankrantiNames: sankranti.map((f) => f.nameTe || f.name),
+    ekadashiName: ekadashiFestivals[0]?.nameTe || ekadashiFestivals[0]?.name || (ekadashi ? 'ఏకాదశి' : null),
     amavasyaLabel: amavasya ? 'అమావాస్య' : null,
     pournamiLabel: pournami ? 'పౌర్ణమి' : null,
   };
@@ -108,10 +108,13 @@ function buildPanchangPhases(ctx) {
     phase4: {
       label: 'Phase 4 — Calendar & Festivals',
       festivals: festivals.map((f) => ({
-        name: f.name,
+        name: f.nameTe || f.name,
+        nameEn: f.nameEn || f.name,
+        nameTe: f.nameTe || f.name,
         category: f.category,
         categoryTe: f.categoryTe,
         isFastingDay: f.isFastingDay,
+        description: f.description || '',
       })),
       ekadashi: special.ekadashiName || (special.isEkadashi ? 'ఏకాదశి' : null),
       amavasya: special.amavasyaLabel,

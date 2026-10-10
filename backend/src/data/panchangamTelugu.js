@@ -29,7 +29,7 @@ const YOGA_TE = [
 
 const KARANA_TE = {
   Bava: 'బవ', Balava: 'బాలవ', Kaulava: 'కౌలవ', Taitila: 'తైతుల',
-  Gara: 'గర', Vanija: 'వణిజ', Vishti: 'విష్టి (భద్ర)',
+  Gara: 'గర', Vanija: 'వణిజ', Vishti: 'భద్ర',
   Shakuni: 'శకుని', Chatushpada: 'చతుష్పాద', Naga: 'నాగ', Kimstughna: 'కింస్తుఘ్న',
 };
 
@@ -56,7 +56,7 @@ const AYANA_TE = { Uttarayana: 'ఉత్తరాయణం', Dakshinayana: 'ద
 
 const RITU_TE = {
   Vasanta: 'వసంత ఋతువు', Grishma: 'గ్రీష్మ ఋతువు',
-  Varsha: 'వర్ష ఋతువు', Sharad: 'శరద్ ఋతువు',
+  Varsha: 'వర్ష ఋతువు', Sharad: 'శరదృతువు',
   Hemanta: 'హేమంత ఋతువు', Shishira: 'శిశిర ఋతువు',
 };
 

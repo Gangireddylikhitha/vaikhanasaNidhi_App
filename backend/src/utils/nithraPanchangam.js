@@ -16,7 +16,18 @@ const {
 const { parseIstDate } = require('./panchangamDate');
 const { GeoVector, Ecliptic, Body } = require('astronomy-engine');
 
-const PAKSHA_NITHRA = { Shukla: 'శుక్ల', Krishna: 'బహుళ' };
+let nithraCalendarData = {};
+try {
+  nithraCalendarData = require('../data/nithraCalendarData.json');
+} catch (e) {
+  nithraCalendarData = {};
+}
+
+function getNithraEntry(dateKey) {
+  return nithraCalendarData?.[dateKey] || null;
+}
+
+const PAKSHA_NITHRA = { Shukla: 'శుద్ధ', Krishna: 'బహుళ' };
 
 const VARA_SANSKRIT = [
   'భాను వాసరః',
@@ -213,68 +224,108 @@ function buildNithraDisplay(raw, ctx) {
 
   const pakshaShort = PAKSHA_NITHRA[pakshaKey] || '';
   const samvatsaraTeName = samvatsaraTe(samvatsaram) || samvatsaram;
+  const entry = getNithraEntry(dateKey);
+
+  const defaultFestivalBanner = (() => {
+    if (!festivals || festivals.length === 0) return null;
+    const nonSpanMajor = festivals.find(
+      (f) =>
+        (f.category === 'major' ||
+          f.category === 'sankranti' ||
+          f.category === 'ekadashi' ||
+          f.category === 'vrat' ||
+          f.category === 'vratham') &&
+        f.type !== 'span'
+    );
+    const target = nonSpanMajor || festivals.find((f) => f.category === 'major') || festivals[0];
+    return target?.nameTe || target?.name || null;
+  })();
+
+  const festivalBanner = entry?.importantDays || entry?.virathaDays || entry?.festivals || defaultFestivalBanner;
+
+  const tithiLine = entry?.tithi || buildAngaTransitionLine(
+    raw.tithis || raw.tithiTransitions,
+    raw.tithiEndTime,
+    (t) => tithiTe(t.index),
+    timezone,
+    { withPaksha: true, pakshaShort }
+  );
+
+  const nakshatraLine = entry?.nakshatra || buildAngaTransitionLine(
+    raw.nakshatras || raw.nakshatraTransitions,
+    raw.nakshatraEndTime,
+    (t) => nakshatraTe(t.index),
+    timezone
+  );
+
+  const yogaLine = entry?.yoga || buildAngaTransitionLine(
+    raw.yogas || raw.yogaTransitions,
+    raw.yogaEndTime,
+    (t) => {
+      const y = yogaTe(t.index);
+      return y === 'ఇంద్ర' ? 'ఇంద్రం' : y;
+    },
+    timezone
+  );
+
+  const karanaLine = entry?.karana || buildAngaTransitionLine(
+    raw.karanas || raw.karanaTransitions,
+    raw.karanas?.[0]?.endTime,
+    (k) => karanaTe(k.name),
+    timezone,
+    { allEnds: true }
+  );
+
+  const durmuhurtham = entry?.durmuhurtam
+    ? (entry.durmuhurtam.includes(' తిరిగి ')
+        ? entry.durmuhurtam.split(' తిరిగి ').map((s) => s.trim())
+        : [entry.durmuhurtam])
+    : (muh.durMuhurta || [])
+        .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
+        .filter((s) => s !== '—');
+
+  const varjyam = entry?.varjyam
+    ? [entry.varjyam]
+    : (muh.varjyamPrimary || [])
+        .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
+        .filter((s) => s !== '—');
+
+  const amritaGadiyalu = entry?.amritaGadiyalu
+    ? [entry.amritaGadiyalu]
+    : (muh.amritPrimary || [])
+        .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
+        .filter((s) => s !== '—');
 
   return {
     headerMonthVaaram: formatHeaderMonthVaaram(dateKey, varaIndex),
     vasaraSanskrit: VARA_SANSKRIT[varaIndex] || '—',
-    dateDdMmYyyy: formatDdMmYyyy(dateKey),
-    samvatsaraTitle: samvatsaraTeName ? `శ్రీ ${samvatsaraTeName} నామ సంవత్సరం` : '—',
-    maasam: masaNithra(maasamIndex),
-    ruthuvu: ruthuvuNithra(rituKey),
-    ayanam: AYANA_TE[ayanaKey] || ayanaKey || '—',
-    festivalBanner: festivals?.[0]?.name || festivals?.[0]?.nameTe || null,
-    sunrise: formatNithraSunTime(raw.sunrise, timezone),
-    sunset: formatNithraSunTime(raw.sunset, timezone),
-    moonrise: formatNithraSunTime(raw.moonrise, timezone),
-    moonset: formatNithraSunTime(raw.moonset, timezone),
-    tithiLine: buildAngaTransitionLine(
-      raw.tithis || raw.tithiTransitions,
-      raw.tithiEndTime,
-      (t) => tithiTe(t.index),
-      timezone,
-      { withPaksha: true, pakshaShort }
-    ),
-    nakshatraLine: buildAngaTransitionLine(
-      raw.nakshatras || raw.nakshatraTransitions,
-      raw.nakshatraEndTime,
-      (t) => nakshatraTe(t.index),
-      timezone
-    ),
-    yogaLine: buildAngaTransitionLine(
-      raw.yogas || raw.yogaTransitions,
-      raw.yogaEndTime,
-      (t) => {
-        const y = yogaTe(t.index);
-        return y === 'ఇంద్ర' ? 'ఇంద్రం' : y;
-      },
-      timezone
-    ),
-    karanaLine: buildAngaTransitionLine(
-      raw.karanas || raw.karanaTransitions,
-      raw.karanas?.[0]?.endTime,
-      (k) => karanaTe(k.name),
-      timezone,
-      { allEnds: true }
-    ),
-    shubhaSamayamulu: formatShubhaSamayamulu(raw.choghadiya, timezone),
-    shraddhaTithi: getShraddhaTithi(dateKey, pakshaKey),
-    rahukalam: formatNithraRangeColon(muh.rahuKalamStart, muh.rahuKalamEnd, timezone),
-    yamagandam: formatNithraRangeColon(muh.yamagandaKalam?.start, muh.yamagandaKalam?.end, timezone),
+    dateDdMmYyyy: entry?.dateDdMmYyyy || formatDdMmYyyy(dateKey),
+    samvatsaraTitle: entry?.teluguYearname
+      ? (entry.teluguYearname.startsWith('శ్రీ') ? entry.teluguYearname : `శ్రీ ${entry.teluguYearname}`)
+      : (samvatsaraTeName ? `శ్రీ ${samvatsaraTeName} నామ సంవత్సరం` : '—'),
+    maasam: entry?.teluguMonth || masaNithra(maasamIndex),
+    ruthuvu: entry?.ruthulu || ruthuvuNithra(rituKey),
+    ayanam: entry?.ayanam || AYANA_TE[ayanaKey] || ayanaKey || '—',
+    festivalBanner,
+    sunrise: entry?.sunrise || formatNithraSunTime(raw.sunrise, timezone),
+    sunset: entry?.sunset || formatNithraSunTime(raw.sunset, timezone),
+    moonrise: entry?.moonrise || formatNithraSunTime(raw.moonrise, timezone),
+    moonset: entry?.moonset || formatNithraSunTime(raw.moonset, timezone),
+    tithiLine,
+    nakshatraLine,
+    yogaLine,
+    karanaLine,
+    shubhaSamayamulu: entry?.subhaTime || formatShubhaSamayamulu(raw.choghadiya, timezone),
+    shraddhaTithi: entry?.shraddhaTithi || getShraddhaTithi(dateKey, pakshaKey),
+    rahukalam: entry?.rahukalam || formatNithraRangeColon(muh.rahuKalamStart, muh.rahuKalamEnd, timezone),
+    yamagandam: entry?.yamagandam || formatNithraRangeColon(muh.yamagandaKalam?.start, muh.yamagandaKalam?.end, timezone),
     gulikakalam: formatNithraRangeColon(muh.gulikaKalam?.start, muh.gulikaKalam?.end, timezone),
-    durmuhurtham: (muh.durMuhurta || [])
-      .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
-      .filter((s) => s !== '—'),
-    varjyam: (muh.varjyamPrimary || [])
-      .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
-      .filter((s) => s !== '—'),
-    varjyamAll: (muh.varjyamAll || [])
-      .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
-      .filter((s) => s !== '—'),
-    amritaGadiyalu: (muh.amritPrimary || [])
-      .map((p) => formatNithraRangeColon(p.start, p.end, timezone))
-      .filter((s) => s !== '—'),
+    durmuhurtham,
+    varjyam,
+    varjyamAll: varjyam,
+    amritaGadiyalu,
     abhijitMuhurtham: formatNithraRangeColon(muh.abhijitMuhurta?.start, muh.abhijitMuhurta?.end, timezone),
   };
 }
 
-module.exports = { buildNithraDisplay, PAKSHA_NITHRA };
+module.exports = { buildNithraDisplay, PAKSHA_NITHRA, getNithraEntry };

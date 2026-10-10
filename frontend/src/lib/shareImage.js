@@ -4,7 +4,6 @@ import guruLogo from '../assets/images/vaikhanasaGuru.png';
 import { isNativeApp } from './native';
 
 const CARD_WIDTH = 1080;
-const CARD_HEIGHT = 1200;
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -40,62 +39,64 @@ export async function buildShareCard({ title, lines = [], footer = 'వైఖా
     try { await document.fonts.ready; } catch { /* fonts API optional */ }
   }
 
+  const cardHeight = Math.max(1360, 520 + lines.length * 80);
+
   const canvas = document.createElement('canvas');
   canvas.width = CARD_WIDTH;
-  canvas.height = CARD_HEIGHT;
+  canvas.height = cardHeight;
   const ctx = canvas.getContext('2d');
 
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, cardHeight);
   bgGrad.addColorStop(0, '#1a1407');
   bgGrad.addColorStop(1, '#0a0a0a');
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+  ctx.fillRect(0, 0, CARD_WIDTH, cardHeight);
 
   ctx.strokeStyle = '#C88F2D';
   ctx.lineWidth = 5;
-  ctx.strokeRect(22, 22, CARD_WIDTH - 44, CARD_HEIGHT - 44);
+  ctx.strokeRect(22, 22, CARD_WIDTH - 44, cardHeight - 44);
 
-  let y = 200;
+  let y = 160;
   try {
     const logo = await loadImage(guruLogo);
-    const logoSize = 180;
-    ctx.drawImage(logo, (CARD_WIDTH - logoSize) / 2, y - logoSize + 40, logoSize, logoSize);
+    const logoSize = 140;
+    ctx.drawImage(logo, (CARD_WIDTH - logoSize) / 2, y - 40, logoSize, logoSize);
   } catch {
     // Logo optional — card still renders without it.
   }
-  y += 90;
+  y += 130;
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#E4B24B';
-  ctx.font = "600 42px 'Tiro Telugu', serif";
+  ctx.font = "600 38px 'Tiro Telugu', serif";
   ctx.fillText('వైఖానస నిధి', CARD_WIDTH / 2, y);
-  y += 78;
+  y += 65;
 
   ctx.fillStyle = '#F6D67A';
-  ctx.font = "700 54px 'Tiro Telugu', serif";
+  ctx.font = "700 48px 'Tiro Telugu', serif";
   ctx.fillText(title, CARD_WIDTH / 2, y);
-  y += 50;
+  y += 40;
 
   ctx.strokeStyle = 'rgba(200,143,45,0.5)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(120, y);
-  ctx.lineTo(CARD_WIDTH - 120, y);
+  ctx.moveTo(100, y);
+  ctx.lineTo(CARD_WIDTH - 100, y);
   ctx.stroke();
-  y += 120;
+  y += 75;
 
   ctx.textAlign = 'left';
   ctx.fillStyle = '#E8D5A0';
-  ctx.font = "400 36px 'Tiro Telugu', serif";
+  ctx.font = "400 33px 'Tiro Telugu', serif";
   const maxWidth = CARD_WIDTH - 160;
   for (const line of lines) {
-    y = wrapText(ctx, line, 80, y, maxWidth, 52) + 22;
+    y = wrapText(ctx, line, 80, y, maxWidth, 48) + 18;
   }
 
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(228,178,75,0.65)';
-  ctx.font = "italic 28px 'Tiro Telugu', serif";
-  ctx.fillText(footer, CARD_WIDTH / 2, CARD_HEIGHT - 55);
+  ctx.font = "italic 26px 'Tiro Telugu', serif";
+  ctx.fillText(footer, CARD_WIDTH / 2, cardHeight - 45);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
 }
