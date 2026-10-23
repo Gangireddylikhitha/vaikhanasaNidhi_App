@@ -46,11 +46,12 @@ jobs:
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
         run: |
-          # Create compressed deployment bundle (excluding node_modules, tests, git)
+          # Create compressed deployment bundle (excluding node_modules, tests, git, old EB files)
           tar --exclude="node_modules" \
               --exclude=".git" \
               --exclude="tests" \
               --exclude=".env*" \
+              --exclude=".elasticbeanstalk" \
               -czf /tmp/backend-deploy.tar.gz -C backend .
 
           # SCP to EC2
