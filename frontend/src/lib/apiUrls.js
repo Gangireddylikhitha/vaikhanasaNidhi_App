@@ -18,20 +18,22 @@ function isLocalBrowser() {
 }
 
 function resolveApiBaseUrl() {
-  const configuredApi = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (configuredApi) {
-    return configuredApi;
-  }
-
+  // Mobile Android/iOS platform: always use production unless an override is set
   if (isNativeApp()) {
-    return PRODUCTION_API;
+    return import.meta.env.VITE_API_BASE_URL?.trim() || PRODUCTION_API;
   }
 
-  if (isLocalBrowser() || import.meta.env.DEV) {
+  // Local development in browser (npm run dev):
+  // Automatically use local backend so developers don't have to manually edit .env
+  if (import.meta.env.DEV && isLocalBrowser()) {
+    const configuredApi = import.meta.env.VITE_API_BASE_URL?.trim();
+    if (configuredApi && !configuredApi.includes('api.vaikhanasanidhi.com')) {
+      return configuredApi;
+    }
     return DEFAULT_LOCAL_API;
   }
 
-  return PRODUCTION_API;
+  return import.meta.env.VITE_API_BASE_URL?.trim() || PRODUCTION_API;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
