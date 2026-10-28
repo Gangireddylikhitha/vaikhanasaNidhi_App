@@ -17,8 +17,6 @@ function isLocalBrowser() {
   return host === 'localhost' || host === '127.0.0.1';
 }
 
-
-
 function resolveApiBaseUrl() {
   const configuredApi = import.meta.env.VITE_API_BASE_URL?.trim();
   if (configuredApi) {
@@ -45,6 +43,9 @@ export const adminLogin = '/auth/admin/login';
 export const guest = '/auth/guest';
 export const refresh = '/auth/refresh';
 export const changePassword = '/auth/change-password';
+export const forgotPasswordLookup = '/auth/forgot-password/lookup';
+export const forgotPasswordSendOtp = '/auth/forgot-password/send-otp';
+export const forgotPasswordReset = '/auth/forgot-password/reset';
 export const me = '/auth/me';
 export const logout = '/auth/logout';
 

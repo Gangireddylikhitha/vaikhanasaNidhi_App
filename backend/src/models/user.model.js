@@ -15,6 +15,25 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: undefined,
+      index: {
+        unique: true,
+        sparse: true,
+        partialFilterExpression: { email: { $type: 'string' } },
+      },
+    },
+    phone: {
+      type: String,
+      trim: true,
+      default: null,
+      index: {
+        sparse: true,
+      },
+    },
     password: {
       type: String,
       required: true,
@@ -93,6 +112,8 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
     role: this.role,
     name: this.name,
     username: this.username,
+    email: this.email || null,
+    phone: this.phone || null,
     verification_status: this.verification_status || 'none',
     logged_in: true,
   };

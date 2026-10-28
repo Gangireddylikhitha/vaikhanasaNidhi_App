@@ -79,6 +79,27 @@ export function useChangePasswordLogin(options) {
   });
 }
 
+export function useForgotPasswordLookup(options) {
+  return useCustomMutation({
+    mutationFn: authApi.forgotPasswordLookup,
+    ...options,
+  });
+}
+
+export function useForgotPasswordSendOtp(options) {
+  return useCustomMutation({
+    mutationFn: authApi.forgotPasswordSendOtp,
+    ...options,
+  });
+}
+
+export function useForgotPasswordReset(options) {
+  return useCustomMutation({
+    mutationFn: authApi.forgotPasswordReset,
+    ...options,
+  });
+}
+
 export function useMe(options = {}) {
   return useCustomQuery({
     queryKey: AUTH_ME_QUERY_KEY,

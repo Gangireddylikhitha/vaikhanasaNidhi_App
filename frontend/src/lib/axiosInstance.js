@@ -28,7 +28,14 @@ axiosInstance.interceptors.request.use((config) => {
 // refresh token itself has expired.
 
 // Endpoints that must never trigger a refresh retry (they define the session).
-const AUTH_ENDPOINTS = ['/auth/login', '/auth/admin/login', '/auth/signup', '/auth/guest', '/auth/refresh'];
+const AUTH_ENDPOINTS = [
+  '/auth/login',
+  '/auth/admin/login',
+  '/auth/signup',
+  '/auth/guest',
+  '/auth/refresh',
+  '/auth/forgot-password',
+];
 
 let isRefreshing = false;
 let pendingQueue = [];

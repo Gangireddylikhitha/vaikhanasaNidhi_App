@@ -6,6 +6,8 @@ function mapUser(user) {
     id: user._id.toString(),
     name: user.name,
     username: user.username,
+    email: user.email || null,
+    phone: user.phone || null,
     verification_status: user.verification_status || 'none',
     last_login_at: user.last_login_at || null,
     joined_at: user.createdAt,
@@ -24,7 +26,12 @@ exports.listUsers = catchAsync(async (req, res) => {
   const filter = { role: 'user' };
   if (q) {
     const pattern = new RegExp(escapeRegex(q), 'i');
-    filter.$or = [{ name: pattern }, { username: pattern }];
+    filter.$or = [
+      { name: pattern },
+      { username: pattern },
+      { email: pattern },
+      { phone: pattern },
+    ];
   }
 
   const [total, users] = await Promise.all([
@@ -33,7 +40,7 @@ exports.listUsers = catchAsync(async (req, res) => {
       .sort({ last_login_at: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('name username verification_status last_login_at createdAt')
+      .select('name username email phone verification_status last_login_at createdAt')
       .lean(),
   ]);
 
