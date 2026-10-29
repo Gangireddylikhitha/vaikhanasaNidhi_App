@@ -243,6 +243,8 @@ function ForgotPasswordForm({ onBack, onSuccess }) {
       if (data.email) {
         setEmail(data.email);
       }
+            setEmail('test@gmail.com');
+
       setStep(2);
     },
     onError: (err) => toast.error(getApiError(err, 'Could not find account.')),
