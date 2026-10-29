@@ -1,0 +1,85 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - deployment
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy Backend (EC2 + PM2)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # Optional: inject Firebase service account if provided in GitHub Secrets
+      - name: Inject Firebase Service Account
+        working-directory: ./backend
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > firebase-service-account.json
+            echo "firebase-service-account.json written from GitHub Secrets."
+          else
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON secret not provided; keeping existing file if packaged."
+          fi
+
+      - name: Package & Transfer Backend to EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          # Create compressed deployment bundle (excluding node_modules, tests, git, old EB files)
+          tar --exclude="node_modules" \
+              --exclude=".git" \
+              --exclude="tests" \
+              --exclude=".env*" \
+              --exclude=".elasticbeanstalk" \
+              -czf /tmp/backend-deploy.tar.gz -C backend .
+
+          # SCP to EC2
+          scp /tmp/backend-deploy.tar.gz "$USER@$HOST:/home/$USER/backend-deploy.tar.gz"
+
+      - name: Extract & Restart PM2 on EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh "$USER@$HOST" "bash -c '
+            set -e
+            mkdir -p /home/$USER/vaikhanasa-backend
+            tar -xzf /home/$USER/backend-deploy.tar.gz -C /home/$USER/vaikhanasa-backend
+            rm -f /home/$USER/backend-deploy.tar.gz
+            cd /home/$USER/vaikhanasa-backend
+            npm ci --omit=dev
+            pm2 restart vaikhanasa-api --update-env
+            pm2 save
+          '"
+
+      - name: Verify Live API Health
+        run: |
+          echo "Waiting 5 seconds for server restart..."
+          sleep 5
+          STATUS=$(curl -s https://api.vaikhanasanidhi.com/api/health | grep -o '"status":"ok"' || true)
+          if [ "$STATUS" = '"status":"ok"' ]; then
+            echo "API health check passed successfully!"
+          else
+            echo "Warning: Health check endpoint did not return status ok."
+          fi

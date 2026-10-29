@@ -1,24 +1,58 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Bookmark, Share2, ZoomIn, ZoomOut, Copy, Check, BookOpen } from "lucide-react";
-import { SCRIPTURES, getCategoryInfo } from "../data/scriptures";
-import { isBookmarked, addBookmark, removeBookmark, saveReadingProgress, getSettings } from "../store/useAppStore";
+import { getCategoryInfo } from "../utils/categoryLookup";
+import { usePublicCategories } from "../hooks/usePublicCategories";
+import { usePublicSubcategories } from "../hooks/usePublicSubcategories";
+import { isImageGalleryScripture, isBookImageScripture, isBookPdfScripture } from "../utils/scriptureSubcategoryMatch";
+import { usePublicScripture, usePublicScriptures } from "../hooks/usePublicScriptures";
+import { ScriptureLoadingState, ScriptureErrorState } from "../components/ScriptureLoadingState";
+import { useBookmarks, useBookmarkActions, useProgressActions, useReadingProgress } from "../hooks/useUserData";
+import { getSettings } from "../store/useAppStore";
 import { getReaderBaseFontSize } from "../lib/theme";
+import { isBookPaginatedScripture } from "../lib/textLayout";
+import BookPageReader from "../components/BookPageReader";
+import BookImageReader from "../components/BookImageReader";
+import BookPdfReader from "../components/BookPdfReader";
+import CompactImageLightbox from "../components/CompactImageLightbox";
 import { toast } from "sonner";
+import { isLoggedIn } from "../store/authStore";
 
 export default function Reader() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const scripture = SCRIPTURES.find(s => s.id === id);
+  const { data: scripture, isLoading, isError, refetch } = usePublicScripture(id);
+  const { data: allScriptures = [] } = usePublicScriptures();
+  const { data: mainCategories = [] } = usePublicCategories();
+  const { data: readerSubcategories = [] } = usePublicSubcategories(scripture?.parent_category);
+  const { data: bookmarks = [] } = useBookmarks();
+  const { data: readingProgress = [] } = useReadingProgress({ enabled: isLoggedIn() });
+  const { addMutation, removeMutation, isBookmarked: checkBookmarked } = useBookmarkActions();
+  const progressMutation = useProgressActions();
   const [fontSize, setFontSize] = useState(() => getReaderBaseFontSize(getSettings().fontSize));
-  const [bookmarked, setBookmarked] = useState(() => isBookmarked(id));
+  const [bookmarked, setBookmarked] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [galleryLightbox, setGalleryLightbox] = useState(null);
   const containerRef = useRef(null);
+  const lastProgressSave = useRef(0);
+
+  const savedProgress = readingProgress.find((p) => p.scripture_id === id);
+  const initialBookPage = savedProgress?.last_verse != null ? savedProgress.last_verse : 0;
+
+  useEffect(() => {
+    setBookmarked(checkBookmarked(id, bookmarks));
+  }, [id, bookmarks, checkBookmarked]);
+
+  useEffect(() => {
+    if (savedProgress?.progress > 0) {
+      setScrollProgress(savedProgress.progress);
+    }
+  }, [id, savedProgress?.progress]);
 
   const related = scripture
-    ? SCRIPTURES.filter(s => s.category === scripture.category && s.id !== scripture.id).slice(0, 3)
+    ? allScriptures.filter(s => s.category === scripture.category && s.id !== scripture.id).slice(0, 3)
     : [];
 
   useEffect(() => {
@@ -31,17 +65,54 @@ export default function Reader() {
 
   useEffect(() => {
     if (!scripture) return;
+    const gallery = isImageGalleryScripture(scripture);
+    const isBook = isBookPaginatedScripture(scripture);
+    const isBookImage = isBookImageScripture(scripture);
+    const isBookPdf = isBookPdfScripture(scripture);
+    if (isBook || isBookImage || isBookPdf) return;
+
+    const count = gallery ? (scripture.images?.length || 0) : (scripture.verses?.length || 0);
     const handler = () => {
       const total = document.documentElement.scrollHeight - window.innerHeight;
       const pct = total > 0 ? Math.round((window.scrollY / total) * 100) : 0;
       setScrollProgress(pct);
-      if (pct > 5) {
-        const lv = Math.floor((pct / 100) * scripture.verses.length);
-        saveReadingProgress(scripture, Math.min(pct, 100), lv);
+      if (!gallery && pct > 5) {
+        const lv = Math.floor((pct / 100) * Math.max(count, 1));
+        const now = Date.now();
+        if (now - lastProgressSave.current > 2500) {
+          lastProgressSave.current = now;
+          progressMutation.mutate({
+            scripture,
+            progress: Math.min(pct, 100),
+            lastVerse: lv,
+          });
+        }
       }
     };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
+  }, [scripture, progressMutation]);
+
+  const saveBookProgress = useCallback((pct, pageIdx) => {
+    if (!scripture) return;
+    const now = Date.now();
+    if (now - lastProgressSave.current < 2000) return;
+    lastProgressSave.current = now;
+    progressMutation.mutate({
+      scripture,
+      progress: Math.min(pct, 100),
+      lastVerse: pageIdx,
+    });
+    setScrollProgress(pct);
+  }, [scripture, progressMutation]);
+
+  useEffect(() => {
+    if (!scripture) return;
+    const visual = isBookPdfScripture(scripture) || isBookImageScripture(scripture);
+    if (!visual) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
   }, [scripture]);
 
   function copyVerse(verse, idx) {
@@ -52,14 +123,37 @@ export default function Reader() {
   }
 
   function toggleBookmark() {
-    if (bookmarked) { removeBookmark(id); setBookmarked(false); toast.info("Bookmark removed"); }
-    else { addBookmark(scripture); setBookmarked(true); toast.success("Bookmarked!"); }
+    if (bookmarked) {
+      removeMutation.mutate(id, {
+        onSuccess: () => { setBookmarked(false); toast.info("Bookmark removed"); },
+      });
+    } else {
+      addMutation.mutate(scripture, {
+        onSuccess: () => { setBookmarked(true); toast.success("Bookmarked!"); },
+      });
+    }
   }
 
   function handleShare() {
     const text = scripture.title_telugu + "\n\n" + (scripture.verses[0]?.telugu || "");
     if (navigator.share) navigator.share({ title: scripture.title_telugu, text });
     else { navigator.clipboard?.writeText(text); toast.success("Copied!"); }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen page-bg">
+        <ScriptureLoadingState message="Loading scripture…" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen page-bg">
+        <ScriptureErrorState message="Could not load this scripture." onRetry={refetch} />
+      </div>
+    );
   }
 
   if (!scripture) {
@@ -77,18 +171,35 @@ export default function Reader() {
     );
   }
 
-  const cat = getCategoryInfo(scripture.category);
+  const cat = getCategoryInfo(scripture.category, mainCategories);
+  const subcategory = readerSubcategories.find(
+    (sub) => (sub.key || sub.slug || sub.id) === scripture.subcategory
+  );
+  const subcategoryLabel = subcategory?.label_te
+    || subcategory?.label
+    || subcategory?.label_en
+    || scripture.subcategory;
+  const isGallery = isImageGalleryScripture(scripture);
+  const isBookPdfMode = isBookPdfScripture(scripture);
+  const isBookImageMode = !isBookPdfMode && isBookImageScripture(scripture);
+  const isBookMode = !isBookPdfMode && !isBookImageMode && isBookPaginatedScripture(scripture);
+  const isBookVisualMode = isBookPdfMode || isBookImageMode;
+  const itemCount = isGallery
+    ? (scripture.page_count || scripture.images?.length || 0)
+    : isBookPdfMode || isBookImageMode || isBookMode
+      ? (scripture.page_count || scripture.images?.length || scripture.verses?.length || 0)
+      : (scripture.page_count || scripture.verses?.length || 0);
 
   return (
-    <div ref={containerRef} className="min-h-screen pb-12 page-bg">
+    <div ref={containerRef} className={isBookVisualMode ? 'book-reader-immersive page-bg' : 'min-h-screen pb-12 page-bg'}>
 
       <div className="fixed top-0 left-0 right-0 h-0.5 z-50" style={{ background: '#222' }}>
         <motion.div className="h-full" style={{ background: 'linear-gradient(90deg, #C88F2D, #E4B24B)' }}
           animate={{ width: scrollProgress + "%" }} transition={{ duration: 0.15 }} />
       </div>
 
-      <div className="sticky top-0 z-40 mx-3 sm:mx-6 mt-3 lg:top-16">
-        <div className="corner-card rounded-2xl px-3 py-2.5 flex items-center gap-2 backdrop-blur-md"
+      <div className={`sticky top-0 z-40 mx-3 sm:mx-6 ${isBookVisualMode ? 'mt-2 mb-1' : 'mt-3'} lg:top-16`}>
+        <div className={`corner-card ${isBookVisualMode ? 'rounded-xl' : 'rounded-2xl'} px-3 py-2.5 flex items-center gap-2 backdrop-blur-md`}
           style={{ background: 'var(--bg-nav)' }}>
           <button onClick={() => navigate(-1)}
             className="p-2 rounded-xl hover:bg-white/5 text-muted hover:text-white flex-shrink-0 transition-colors">
@@ -96,18 +207,22 @@ export default function Reader() {
           </button>
           <span className="flex-1 font-telugu text-sm sm:text-base font-semibold truncate gold-glow"
             style={{ fontFamily: "Tiro Telugu, serif" }}>
-            {scripture.title_telugu}
+            {scripture.title_english || scripture.title_telugu}
           </span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            <button onClick={() => setFontSize(s => Math.max(14, s - 2))}
-              className="p-2 rounded-xl hover:bg-white/5 text-muted">
-              <ZoomOut size={15} />
-            </button>
-            <span className="text-xs text-secondary w-8 text-center hidden sm:inline">{fontSize}</span>
-            <button onClick={() => setFontSize(s => Math.min(40, s + 2))}
-              className="p-2 rounded-xl hover:bg-white/5 text-muted">
-              <ZoomIn size={15} />
-            </button>
+            {!isBookImageMode && !isBookPdfMode && (
+              <>
+                <button onClick={() => setFontSize(s => Math.max(14, s - 2))}
+                  className="p-2 rounded-xl hover:bg-white/5 text-muted">
+                  <ZoomOut size={15} />
+                </button>
+                <span className="text-xs text-secondary w-8 text-center hidden sm:inline">{fontSize}</span>
+                <button onClick={() => setFontSize(s => Math.min(40, s + 2))}
+                  className="p-2 rounded-xl hover:bg-white/5 text-muted">
+                  <ZoomIn size={15} />
+                </button>
+              </>
+            )}
             <button onClick={toggleBookmark}
               className="p-2 rounded-xl hover:bg-white/5 transition-colors"
               style={{ color: bookmarked ? 'var(--text-primary)' : 'var(--text-muted)' }}>
@@ -121,42 +236,50 @@ export default function Reader() {
         </div>
       </div>
 
-      <div className="xl:flex xl:gap-6 xl:px-6 xl:mt-4">
-        <div className="xl:flex-1 min-w-0">
+      <div className={isBookVisualMode ? 'flex flex-col flex-1 min-h-0' : 'xl:flex xl:gap-6 xl:px-6 xl:mt-4'}>
+        <div className={isBookVisualMode ? 'flex flex-col flex-1 min-h-0' : 'xl:flex-1 min-w-0'}>
 
-          <div className="mx-3 sm:mx-6 xl:mx-0 mt-3 sm:mt-4 corner-card rounded-3xl overflow-hidden">
-            <div className="p-5 sm:p-7 page-header">
-              <div className="flex flex-wrap gap-2 mb-3">
-                <span className="px-3 py-1 rounded-full text-xs font-telugu text-primary-gold"
-                  style={{ fontFamily: "Tiro Telugu, serif", background: '#C88F2D22', border: '1px solid #C88F2D33' }}>
-                  {cat.label}
-                </span>
-                {scripture.deity && (
-                  <span className="px-3 py-1 rounded-full text-xs text-secondary"
-                    className="rounded-xl p-3 bg-elevated"
-                    style={{ border: '1px solid var(--border-subtle)' }}>
-                    {scripture.deity}
+          {!isBookVisualMode && (
+            <div className="mx-3 sm:mx-6 xl:mx-0 mt-3 sm:mt-4 corner-card rounded-3xl overflow-hidden">
+              <div className="p-5 sm:p-7 page-header">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className="px-3 py-1 rounded-full text-xs font-telugu text-primary-gold"
+                    style={{ fontFamily: "Tiro Telugu, serif", background: '#C88F2D22', border: '1px solid #C88F2D33' }}>
+                    {cat.label}
                   </span>
-                )}
-              </div>
-              <h1 className="font-telugu font-bold leading-snug mb-2 gold-glow-strong"
-                style={{ fontFamily: "Tiro Telugu, serif", fontSize: Math.max(fontSize + 4, 24) }}>
-                {scripture.title_telugu}
-              </h1>
-              <p className="text-secondary text-sm mb-3 italic">{scripture.title_english}</p>
-              <div className="flex items-center gap-3 mt-3">
-                <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: '#222' }}>
-                  <div className="h-full rounded-full transition-all"
-                    style={{ background: 'linear-gradient(90deg, #C88F2D, #E4B24B)', width: scrollProgress + "%" }} />
+                  {subcategoryLabel && (
+                    <span className="px-3 py-1 rounded-full text-xs font-telugu text-secondary"
+                      style={{ fontFamily: "Tiro Telugu, serif", background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
+                      {subcategoryLabel}
+                    </span>
+                  )}
+                  {scripture.deity && (
+                    <span className="px-3 py-1 rounded-full text-xs text-secondary"
+                      className="rounded-xl p-3 bg-elevated"
+                      style={{ border: '1px solid var(--border-subtle)' }}>
+                      {scripture.deity}
+                    </span>
+                  )}
                 </div>
-                <span className="text-muted text-xs flex-shrink-0">
-                  {scripture.verses.length} verses
-                </span>
+                <h1 className="font-telugu font-bold leading-snug mb-2 gold-glow-strong"
+                  style={{ fontFamily: "Tiro Telugu, serif", fontSize: Math.max(fontSize + 4, 24) }}>
+                  {scripture.title_telugu}
+                </h1>
+                <p className="text-secondary text-sm mb-3 italic">{scripture.title_english}</p>
+                <div className="flex items-center gap-3 mt-3">
+                  <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: '#222' }}>
+                    <div className="h-full rounded-full transition-all"
+                      style={{ background: 'linear-gradient(90deg, #C88F2D, #E4B24B)', width: scrollProgress + "%" }} />
+                  </div>
+                  <span className="text-muted text-xs flex-shrink-0">
+                    {isGallery ? `${itemCount} images` : (isBookPdfMode || isBookImageMode || isBookMode) ? `${itemCount} pages` : `${itemCount} verses`}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {scripture.description && (
+          {scripture.description && !isBookVisualMode && (
             <div className="mx-3 sm:mx-6 xl:mx-0 mt-4 corner-card rounded-2xl p-4 sm:p-5 reader-border">
               <p className="font-telugu reading-text text-sm sm:text-base"
                 style={{ fontFamily: "Tiro Telugu, serif" }}>
@@ -165,8 +288,62 @@ export default function Reader() {
             </div>
           )}
 
-          <div className="mx-3 sm:mx-6 xl:mx-0 mt-4 space-y-4">
-            {scripture.verses.map((verse, idx) => (
+          <div className={isBookVisualMode ? 'flex-1 min-h-0 px-1.5 pt-1 pb-1.5' : 'mx-3 sm:mx-6 xl:mx-0 mt-4 space-y-4'}>
+            {isGallery ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
+                {(scripture.images || []).map((img, idx) => (
+                  <motion.button
+                    key={img.url || idx}
+                    type="button"
+                    initial={{ opacity: 0, y: 8 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-20px' }}
+                    transition={{ delay: Math.min(idx * 0.04, 0.25) }}
+                    onClick={() => setGalleryLightbox(idx)}
+                    className="corner-card rounded-xl overflow-hidden reader-border text-left group"
+                  >
+                    <div className="relative overflow-hidden bg-elevated">
+                      <img
+                        src={img.url}
+                        alt={img.caption || scripture.title_telugu}
+                        className="w-full h-[20vh] max-h-28 sm:max-h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all" />
+                    </div>
+                    {img.caption && (
+                      <p className="px-2 py-1.5 text-[10px] sm:text-xs text-muted truncate border-t border-[var(--border-subtle)]"
+                        style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                        {img.caption}
+                      </p>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            ) : isBookPdfMode ? (
+              <BookPdfReader
+                scripture={scripture}
+                pdfUrl={scripture.pdf_url}
+                pageCount={scripture.page_count}
+                initialPage={initialBookPage}
+                onProgress={saveBookProgress}
+              />
+            ) : isBookImageMode ? (
+              <BookImageReader
+                scripture={scripture}
+                images={scripture.images}
+                initialPage={initialBookPage}
+                onProgress={saveBookProgress}
+              />
+            ) : isBookMode ? (
+              <BookPageReader
+                scripture={scripture}
+                verses={scripture.verses}
+                fontSize={fontSize}
+                initialPage={initialBookPage}
+                onProgress={saveBookProgress}
+              />
+            ) : (scripture.verses?.length || 0) > 0 ? (
+              scripture.verses.map((verse, idx) => (
               <motion.div key={idx}
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -217,9 +394,20 @@ export default function Reader() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            ))
+            ) : (
+              <div className="corner-card rounded-2xl p-8 text-center reader-border">
+                <BookOpen size={32} className="mx-auto mb-3 text-muted" />
+                <p className="font-telugu text-sm text-muted" style={{ fontFamily: 'Tiro Telugu, serif' }}>
+                  {scripture.pdf_url
+                    ? 'This book has a PDF but could not be opened. Try refreshing the page.'
+                    : 'No content available for this book yet.'}
+                </p>
+              </div>
+            )}
           </div>
 
+          {!isBookVisualMode && (
           <div className="mx-3 sm:mx-6 xl:mx-0 mt-8 text-center pb-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-1 h-px" style={{ background: '#C88F2D22' }} />
@@ -230,9 +418,10 @@ export default function Reader() {
               {scripture.title_telugu}
             </p>
           </div>
+          )}
         </div>
 
-        {related.length > 0 && (
+        {related.length > 0 && !isBookVisualMode && (
           <div className="hidden xl:block w-72 flex-shrink-0">
             <div className="sticky top-24 space-y-3">
               <h3 className="font-telugu font-bold text-sm gold-glow"
@@ -240,9 +429,9 @@ export default function Reader() {
                 Related Scriptures
               </h3>
               {related.map(s => {
-                const rc = getCategoryInfo(s.category);
+                const rc = getCategoryInfo(s.category, mainCategories);
                 return (
-                  <a key={s.id} href={"/read/" + s.id}
+                  <Link key={s.id} to={"/read/" + s.id}
                     className="corner-card rounded-2xl overflow-hidden hover:brightness-110 transition-all flex">
                     <div className="w-1 flex-shrink-0" style={{ background: 'linear-gradient(180deg, #C88F2D, #E4B24B)' }} />
                     <div className="p-3 flex-1 min-w-0">
@@ -255,13 +444,26 @@ export default function Reader() {
                     <div className="flex items-center pr-3">
                       <BookOpen size={14} className="text-muted" />
                     </div>
-                  </a>
+                  </Link>
                 );
               })}
             </div>
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {galleryLightbox != null && isGallery && (
+          <CompactImageLightbox
+            items={(scripture.images || []).map((img) => ({
+              url: img.url,
+              caption: img.caption,
+            }))}
+            index={galleryLightbox}
+            onClose={() => setGalleryLightbox(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

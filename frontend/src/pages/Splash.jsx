@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ThemeToggle from "../components/ThemeToggle";
+import { brandLogo as logo } from "../constants/brandAssets";
 
 export default function Splash({ onDone }) {
   const [phase, setPhase] = useState("in");   // "in" | "hold" | "out"
@@ -19,9 +21,12 @@ export default function Splash({ onDone }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
-          style={{ background: "linear-gradient(160deg, #1a0a00 0%, #2e0d0d 40%, #0f0a00 100%)" }}
+          className="splash-shell fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden page-bg h-dvh"
+          style={{ backgroundImage: "var(--hero-glow)" }}
         >
+          <div className="absolute top-4 right-4 z-20">
+            <ThemeToggle />
+          </div>
 
           {/* ── ambient glow rings ── */}
           <motion.div
@@ -39,7 +44,7 @@ export default function Splash({ onDone }) {
 
           {/* ── rotating outer ring ── */}
           <motion.div
-            className="absolute rounded-full border border-yellow-600/20 pointer-events-none"
+            className="absolute rounded-full border border-yellow-600/40 pointer-events-none"
             style={{ width: 300, height: 300 }}
             animate={{ rotate: 360 }}
             transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
@@ -47,7 +52,7 @@ export default function Splash({ onDone }) {
             {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
               <div
                 key={deg}
-                className="absolute w-1.5 h-1.5 rounded-full bg-yellow-500/60"
+                className="absolute w-1.5 h-1.5 rounded-full bg-yellow-500/80"
                 style={{
                   top: "50%", left: "50%",
                   transform: "rotate(" + deg + "deg) translateX(148px) translateY(-50%)"
@@ -58,7 +63,7 @@ export default function Splash({ onDone }) {
 
           {/* ── counter-rotate inner ring ── */}
           <motion.div
-            className="absolute rounded-full border border-red-800/25 pointer-events-none"
+            className="absolute rounded-full border border-red-800/50 pointer-events-none"
             style={{ width: 230, height: 230 }}
             animate={{ rotate: -360 }}
             transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
@@ -66,7 +71,7 @@ export default function Splash({ onDone }) {
             {[0, 60, 120, 180, 240, 300].map(deg => (
               <div
                 key={deg}
-                className="absolute w-1 h-1 rounded-full bg-red-400/50"
+                className="absolute w-1 h-1 rounded-full bg-red-400/75"
                 style={{
                   top: "50%", left: "50%",
                   transform: "rotate(" + deg + "deg) translateX(113px) translateY(-50%)"
@@ -94,7 +99,7 @@ export default function Splash({ onDone }) {
                 style={{ background: "radial-gradient(circle, #c9a84c55 0%, transparent 70%)", transform: "scale(1.4)" }}
               />
               <img
-                src="/vaikhanasa.png"
+                src={logo}
                 alt="Vaikhanasa Nidhi"
                 className="relative z-10 drop-shadow-2xl"
                 style={{ width: 180, height: 180, objectFit: "contain" }}
@@ -111,9 +116,9 @@ export default function Splash({ onDone }) {
               <p
                 className="gold-gradient-text font-telugu text-xl font-medium tracking-normal leading-tight"
               >
-                వైఖానస మహాగురవే నమః
+                విఖనస మహాగురవే నమః
               </p>
-              <p className="text-white/40 text-xs tracking-[0.3em] mt-1 uppercase">Sacred Scripture Library</p>
+              <p className="text-muted text-xs tracking-[0.3em] mt-1 uppercase">Sacred Scripture Library</p>
             </motion.div>
           </motion.div>
 
